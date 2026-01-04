@@ -51,7 +51,7 @@ class Cart {
                  (ci.quantity * p.price * (100 - p.discount_percent) / 100) as subtotal
           FROM CartItems ci
           INNER JOIN Products p ON ci.product_id = p.id
-          WHERE ci.cart_id = @cartId AND p.status = 'active'
+          WHERE ci.cart_id = @cartId AND p.status = '1'
         `);
       
       const items = itemsResult.recordset;

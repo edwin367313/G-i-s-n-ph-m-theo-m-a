@@ -55,10 +55,10 @@ try {
     if ($needsRestart) {
         Write-Host "   Restarting SQL Server Service..." -ForegroundColor Yellow
         Restart-Service "MSSQLSERVER" -Force
-        Write-Host "   ✅ SQL Server restarted." -ForegroundColor Green
+        Write-Host "    SQL Server restarted." -ForegroundColor Green
     }
 } catch {
-    Write-Host "   ❌ Error configuring SQL Server: $_" -ForegroundColor Red
+    Write-Host "    Error configuring SQL Server: $_" -ForegroundColor Red
     Write-Host "   Please ensure SQL Server is installed and you are running as Admin." -ForegroundColor Red
 }
 
@@ -77,18 +77,36 @@ try {
     Write-Host "   ❌ Error running test script." -ForegroundColor Red
 }
 
-# 3. Start Backend
-Write-Host "`n[3/4] Starting Backend Server..." -ForegroundColor Cyan
-$backendProcess = Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\backend'; npm start" -PassThru
-Write-Host "   Backend started with PID: $($backendProcess.Id)" -ForegroundColor Green
+# 3. Start all servers in parallel
+Write-Host "`n[3/4] Starting all servers..." -ForegroundColor Cyan
 
-# 4. Start Frontend
-Write-Host "`n[4/4] Starting Frontend..." -ForegroundColor Cyan
-Set-Location "$PSScriptRoot\Nam_frontend"
-$frontendProcess = Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\Nam_frontend'; npm run dev" -PassThru
-Write-Host "   Frontend started with PID: $($frontendProcess.Id)" -ForegroundColor Green
+# Backend
+Write-Host "   Starting Backend (http://localhost:5000)..." -ForegroundColor Yellow
+$backendProcess = Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\backend'; npm start" -PassThru -WindowStyle Normal
+Write-Host "   Backend PID: $($backendProcess.Id)" -ForegroundColor Green
 
-Write-Host "`n✅ All services started! Opening browser..." -ForegroundColor Green
-Start-Sleep -Seconds 5
+# Frontend
+Write-Host "   Starting Frontend (http://localhost:3000)..." -ForegroundColor Yellow
+$frontendProcess = Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\Nam_frontend'; npm run dev" -PassThru -WindowStyle Normal
+Write-Host "   Frontend PID: $($frontendProcess.Id)" -ForegroundColor Green
+
+# Admin Frontend
+Write-Host "   Starting Admin Frontend (http://localhost:5173)..." -ForegroundColor Yellow
+$adminProcess = Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\admin-frontend'; npm run dev" -PassThru -WindowStyle Normal
+Write-Host "   Admin PID: $($adminProcess.Id)" -ForegroundColor Green
+
+# 4. Wait and open browsers
+Write-Host "`n[4/4] Waiting for servers to start..." -ForegroundColor Cyan
+Start-Sleep -Seconds 8
+
+Write-Host "`n✅ All servers started! Opening browsers..." -ForegroundColor Green
 Start-Process "http://localhost:3000"
+Start-Sleep -Seconds 1
+Start-Process "http://localhost:5173"
+
+Write-Host "`nServers running:" -ForegroundColor Cyan
+Write-Host "  - Frontend: http://localhost:3000" -ForegroundColor White
+Write-Host "  - Admin: http://localhost:5173" -ForegroundColor White
+Write-Host "  - Backend API: http://localhost:5000" -ForegroundColor White
+Write-Host "`nPress Ctrl+C in each terminal to stop servers." -ForegroundColor Yellow
 

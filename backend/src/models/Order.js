@@ -46,7 +46,7 @@ class Order {
             SELECT ci.product_id, ci.quantity, p.price as product_price, p.discount_percent, p.name, p.stock as stock_quantity
             FROM CartItems ci
             INNER JOIN Products p ON ci.product_id = p.id
-            WHERE ci.cart_id = @cartId AND p.status = 'active'
+            WHERE ci.cart_id = @cartId AND p.status = '1'
           `);
         
         const cartItems = cartItemsResult.recordset;
@@ -332,6 +332,72 @@ class Order {
       };
     } catch (error) {
       throw new Error(`Error getting orders: ${error.message}`);
+    }
+  }
+
+  /**
+   * Find order by primary key (ID)
+   */
+  static async findByPk(orderId) {
+    try {
+      const pool = await require('../config/database').getPool();
+      
+      const result = await pool.request()
+        .input('orderId', sql.Int, orderId)
+        .query('SELECT * FROM Orders WHERE id = @orderId');
+      
+      if (result.recordset.length === 0) {
+        return null;
+      }
+      
+      return result.recordset[0];
+    } catch (error) {
+      throw new Error(`Error finding order: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update order fields
+   */
+  static async update(updateData, options) {
+    try {
+      const pool = await require('../config/database').getPool();
+      const { where } = options;
+      
+      if (!where || !where.id) {
+        throw new Error('Order ID is required for update');
+      }
+      
+      const request = pool.request().input('id', sql.Int, where.id);
+      let updates = [];
+      
+      if (updateData.paymentStatus !== undefined) {
+        request.input('paymentStatus', sql.VarChar(20), updateData.paymentStatus);
+        updates.push('payment_status = @paymentStatus');
+      }
+      
+      if (updateData.orderStatus !== undefined) {
+        request.input('orderStatus', sql.VarChar(20), updateData.orderStatus);
+        updates.push('status = @orderStatus');
+      }
+      
+      if (updateData.status !== undefined) {
+        request.input('status', sql.VarChar(20), updateData.status);
+        updates.push('status = @status');
+      }
+      
+      updates.push('updated_at = GETDATE()');
+      
+      if (updates.length === 1) {
+        return true;
+      }
+      
+      const query = `UPDATE Orders SET ${updates.join(', ')} WHERE id = @id`;
+      await request.query(query);
+      
+      return true;
+    } catch (error) {
+      throw new Error(`Error updating order: ${error.message}`);
     }
   }
 }

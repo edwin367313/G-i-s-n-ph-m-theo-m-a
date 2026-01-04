@@ -2,8 +2,8 @@ const sql = require('mssql');
 require('dotenv').config();
 
 const config = {
-  server: process.env.DB_HOST || 'EDWIN',
-  database: process.env.DB_NAME || 'MultidimensionalProject4',
+  server: process.env.DB_SERVER || process.env.DB_HOST || 'EDWIN',
+  database: process.env.DB_DATABASE || process.env.DB_NAME || 'DB_SieuThi_Hung',
   user: process.env.DB_USER || 'sa',
   password: process.env.DB_PASSWORD || '123456',
   port: parseInt(process.env.DB_PORT) || 1433,

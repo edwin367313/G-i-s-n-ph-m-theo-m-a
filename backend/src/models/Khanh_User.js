@@ -11,7 +11,7 @@ class User {
         .input('userId', sql.Int, userId)
         .query('SELECT id, username, email, full_name, phone, role, avatar_url, is_active, created_at FROM Users WHERE id = @userId');
       
-      return result[0] || null;
+      return result.recordset[0] || null;
     } catch (error) {
       throw new Error(`Error finding user by ID: ${error.message}`);
     }
@@ -27,7 +27,7 @@ class User {
         .input('email', sql.NVarChar, email)
         .query('SELECT * FROM Users WHERE email = @email');
       
-      return result[0] || null;
+      return result.recordset[0] || null;
     } catch (error) {
       throw new Error(`Error finding user by email: ${error.message}`);
     }
@@ -43,7 +43,7 @@ class User {
         .input('username', sql.NVarChar, username)
         .query('SELECT * FROM Users WHERE username = @username');
       
-      return result[0] || null;
+      return result.recordset[0] || null;
     } catch (error) {
       throw new Error(`Error finding user by username: ${error.message}`);
     }

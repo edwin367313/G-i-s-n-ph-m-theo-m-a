@@ -14,7 +14,10 @@ const config = {
     enableArithAbort: true,
     connectTimeout: 30000,
     requestTimeout: 30000,
-    instanceName: process.env.DB_INSTANCE || undefined
+    instanceName: process.env.DB_INSTANCE || undefined,
+    // Force UTF-8 encoding
+    useUTC: false,
+    charset: 'UTF-8'
   },
   pool: {
     max: 10,
