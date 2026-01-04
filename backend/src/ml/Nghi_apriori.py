@@ -1,7 +1,3 @@
-"""
-Bước 1: Apriori - Phân tích giỏ hàng (Market Basket Analysis)
-Tìm các sản phẩm thường được mua cùng nhau
-"""
 import pyodbc
 import pandas as pd
 from mlxtend.frequent_patterns import apriori, association_rules

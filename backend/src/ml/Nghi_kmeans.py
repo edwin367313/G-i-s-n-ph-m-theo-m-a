@@ -1,9 +1,3 @@
-"""
-Bước 2: K-Means - Phân cụm khách hàng dựa trên RFM
-R (Recency): Số ngày từ lần mua cuối
-F (Frequency): Số lần mua hàng
-M (Monetary): Tổng tiền chi tiêu
-"""
 import pyodbc
 import pandas as pd
 import numpy as np

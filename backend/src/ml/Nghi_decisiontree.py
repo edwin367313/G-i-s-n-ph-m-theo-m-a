@@ -1,7 +1,3 @@
-"""
-Bước 3 & 4: Decision Tree - Học quy luật và giải thích phân khúc
-Sử dụng kết quả từ K-Means làm nhãn để huấn luyện Decision Tree
-"""
 import pyodbc
 import pandas as pd
 import numpy as np
