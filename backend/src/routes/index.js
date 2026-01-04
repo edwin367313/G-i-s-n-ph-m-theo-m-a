@@ -14,6 +14,7 @@ const revenueRoutes = require('./Nghi_revenueRoutes');
 const uploadRoutes = require('./uploadRoutes');
 const analyticsRoutes = require('./Hung_analytics');
 const notificationRoutes = require('./notificationRoutes');
+const mlRoutes = require('./mlRoutes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -28,6 +29,7 @@ router.use('/revenue', revenueRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/ml', mlRoutes);
 
 // API info route
 router.get('/', (req, res) => {
