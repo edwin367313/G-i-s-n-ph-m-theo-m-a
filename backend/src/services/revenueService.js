@@ -1,4 +1,5 @@
 const { query } = require('../config/database');
+const ExcelJS = require('exceljs');
 
 /**
  * Lấy tổng quan doanh thu
@@ -141,23 +142,86 @@ const getRevenueByCategory = async () => {
 };
 
 /**
- * Export báo cáo doanh thu
+ * Export báo cáo doanh thu ra file Excel
  */
 const exportRevenueReport = async (startDate, endDate) => {
-  const result = await query(`
+  // Lấy dữ liệu từ database
+  const orders = await query(`
     SELECT 
-      o.id as 'Mã đơn',
-      o.created_at as 'Ngày tạo',
-      o.full_name as 'Khách hàng',
-      o.total_amount as 'Tổng tiền',
-      o.payment_method as 'Phương thức thanh toán'
+      o.id,
+      o.created_at,
+      o.full_name,
+      o.phone,
+      o.total_amount,
+      o.payment_method,
+      o.status
     FROM Orders o
     WHERE o.status IN ('DELIVERED', 'paid', 'delivery')
     AND o.created_at BETWEEN @startDate AND @endDate
     ORDER BY o.created_at DESC
   `, { startDate, endDate });
+
+  // Tạo workbook và worksheet
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Báo Cáo Doanh Thu');
+
+  // Định dạng header
+  worksheet.columns = [
+    { header: 'Mã Đơn', key: 'id', width: 10 },
+    { header: 'Ngày Tạo', key: 'created_at', width: 20 },
+    { header: 'Khách Hàng', key: 'full_name', width: 25 },
+    { header: 'Số Điện Thoại', key: 'phone', width: 15 },
+    { header: 'Tổng Tiền', key: 'total_amount', width: 15 },
+    { header: 'Phương Thức', key: 'payment_method', width: 15 },
+    { header: 'Trạng Thái', key: 'status', width: 15 }
+  ];
+
+  // Style cho header
+  worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  worksheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF4472C4' }
+  };
+  worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+  // Thêm dữ liệu
+  orders.forEach(order => {
+    worksheet.addRow({
+      id: order.id,
+      created_at: new Date(order.created_at).toLocaleString('vi-VN'),
+      full_name: order.full_name,
+      phone: order.phone,
+      total_amount: order.total_amount,
+      payment_method: order.payment_method,
+      status: order.status
+    });
+  });
+
+  // Format số tiền
+  worksheet.getColumn('total_amount').numFmt = '#,##0 "đ"';
+
+  // Thêm dòng tổng cộng
+  const totalRow = worksheet.addRow({
+    id: '',
+    created_at: '',
+    full_name: '',
+    phone: 'TỔNG CỘNG:',
+    total_amount: orders.reduce((sum, o) => sum + o.total_amount, 0),
+    payment_method: '',
+    status: ''
+  });
   
-  return result;
+  totalRow.font = { bold: true };
+  totalRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE7E6E6' }
+  };
+
+  // Trả về buffer
+  const buffer = await workbook.xlsx.writeBuffer();
+  return buffer;
 };
 
 module.exports = {

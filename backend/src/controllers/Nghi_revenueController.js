@@ -31,8 +31,16 @@ const getRevenueByCategory = asyncHandler(async (req, res) => {
 
 const exportRevenueReport = asyncHandler(async (req, res) => {
   const { startDate, endDate } = req.query;
-  const report = await revenueService.exportRevenueReport(startDate, endDate);
-  return successResponse(res, report, 'Export báo cáo thành công');
+  
+  // Lấy buffer Excel từ service
+  const buffer = await revenueService.exportRevenueReport(startDate, endDate);
+  
+  // Set headers để download file
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=bao-cao-doanh-thu-${startDate}-${endDate}.xlsx`);
+  
+  // Gửi file
+  res.send(buffer);
 });
 
 module.exports = {

@@ -88,18 +88,32 @@ const RevenuePage = () => {
     try {
       const startDate = dayjs().startOf('year').format('YYYY-MM-DD');
       const endDate = dayjs().endOf('year').format('YYYY-MM-DD');
-      const blob = await revenueService.exportReport(startDate, endDate);
       
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([blob]));
+      message.loading({ content: 'Đang xuất báo cáo...', key: 'export' });
+      
+      const response = await revenueService.exportReport(startDate, endDate);
+      
+      // Tạo blob từ response
+      const blob = new Blob([response], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      // Tạo link download
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `revenue_report_${year}.xlsx`); // Assuming backend returns excel/csv
+      link.setAttribute('download', `bao-cao-doanh-thu-${startDate}-${endDate}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      
+      // Dọn dẹp
+      window.URL.revokeObjectURL(url);
+      
+      message.success({ content: 'Xuất báo cáo thành công!', key: 'export' });
     } catch (error) {
-      message.error('Không thể xuất báo cáo');
+      console.error('Export error:', error);
+      message.error({ content: 'Không thể xuất báo cáo', key: 'export' });
     }
   };
 
