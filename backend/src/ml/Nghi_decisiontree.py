@@ -146,6 +146,9 @@ class CustomerClassifier:
     
     def _get_feature_importance(self, feature_names):
         """Lấy độ quan trọng của các features"""
+        if self.dt_model is None:
+            return []
+        
         importances = self.dt_model.feature_importances_
         
         feature_importance = []
@@ -186,6 +189,9 @@ class CustomerClassifier:
         """
         if self.dt_model is None:
             self._load_model()
+        
+        if self.dt_model is None:
+            raise ValueError("Model chưa được huấn luyện")
         
         # Load metadata
         models_dir = os.path.join(os.path.dirname(__file__), 'models')

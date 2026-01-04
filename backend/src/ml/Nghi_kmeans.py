@@ -173,6 +173,9 @@ class CustomerSegmentation:
         if self.kmeans is None:
             self._load_model()
         
+        if self.kmeans is None:
+            raise ValueError("Model chưa được huấn luyện")
+        
         # Chuẩn hóa dữ liệu
         data = np.array([[recency, frequency, monetary]])
         data_scaled = self.scaler.transform(data)
