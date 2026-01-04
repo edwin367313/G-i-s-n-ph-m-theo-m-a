@@ -8,7 +8,7 @@ const getRevenueOverview = async () => {
   const dailyResult = await query(`
     SELECT SUM(total_amount) as total 
     FROM Orders 
-    WHERE status = 'DELIVERED' 
+    WHERE status IN ('DELIVERED', 'paid', 'delivery') 
     AND CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
   `);
 
@@ -16,7 +16,7 @@ const getRevenueOverview = async () => {
   const monthlyResult = await query(`
     SELECT SUM(total_amount) as total 
     FROM Orders 
-    WHERE status = 'DELIVERED' 
+    WHERE status IN ('DELIVERED', 'paid', 'delivery') 
     AND MONTH(created_at) = MONTH(GETDATE()) 
     AND YEAR(created_at) = YEAR(GETDATE())
   `);
@@ -25,7 +25,7 @@ const getRevenueOverview = async () => {
   const yearlyResult = await query(`
     SELECT SUM(total_amount) as total 
     FROM Orders 
-    WHERE status = 'DELIVERED' 
+    WHERE status IN ('DELIVERED', 'paid', 'delivery') 
     AND YEAR(created_at) = YEAR(GETDATE())
   `);
 
@@ -68,7 +68,7 @@ const getRevenueByPeriod = async (startDate, endDate) => {
       SUM(total_amount) as revenue,
       COUNT(*) as orders
     FROM Orders
-    WHERE status = 'DELIVERED'
+    WHERE status IN ('DELIVERED', 'paid', 'delivery')
     AND created_at BETWEEN @startDate AND @endDate
   `, { startDate, endDate });
 
@@ -91,7 +91,7 @@ const getMonthlyRevenue = async (year) => {
       COUNT(*) as orders
     FROM Orders
     WHERE YEAR(created_at) = @year
-      AND status = 'DELIVERED'
+      AND status IN ('DELIVERED', 'paid', 'delivery')
     GROUP BY MONTH(created_at)
     ORDER BY month
   `, { year });
@@ -112,7 +112,7 @@ const getTopProducts = async (limit = 5) => {
     FROM OrderItems oi
     JOIN Orders o ON oi.order_id = o.id
     JOIN Products p ON oi.product_id = p.id
-    WHERE o.status = 'DELIVERED'
+    WHERE o.status IN ('DELIVERED', 'paid', 'delivery')
     GROUP BY p.id, p.name
     ORDER BY sold_quantity DESC
   `, { limit: parseInt(limit) });
@@ -126,13 +126,13 @@ const getTopProducts = async (limit = 5) => {
 const getRevenueByCategory = async () => {
   const result = await query(`
     SELECT 
-      c.name as category,
+      c.name as name,
       SUM(oi.price * oi.quantity) as revenue
     FROM OrderItems oi
     JOIN Orders o ON oi.order_id = o.id
     JOIN Products p ON oi.product_id = p.id
     JOIN Categories c ON p.category_id = c.id
-    WHERE o.status = 'DELIVERED'
+    WHERE o.status IN ('DELIVERED', 'paid', 'delivery')
     GROUP BY c.name
     ORDER BY revenue DESC
   `);
@@ -152,7 +152,7 @@ const exportRevenueReport = async (startDate, endDate) => {
       o.total_amount as 'Tổng tiền',
       o.payment_method as 'Phương thức thanh toán'
     FROM Orders o
-    WHERE o.status = 'DELIVERED'
+    WHERE o.status IN ('DELIVERED', 'paid', 'delivery')
     AND o.created_at BETWEEN @startDate AND @endDate
     ORDER BY o.created_at DESC
   `, { startDate, endDate });

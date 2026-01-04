@@ -1,5 +1,5 @@
 require('dotenv').config();
-const analyticsService = require('./src/services/analyticsService');
+const analyticsService = require('../../src/services/analyticsService');
 
 async function testIntegration() {
     console.log('Testing ML Service Integration...');

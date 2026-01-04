@@ -1,4 +1,4 @@
-const { getPool, closePool } = require('./src/config/database');
+const { getPool, closePool } = require('../../src/config/database');
 require('dotenv').config();
 
 async function testConnection() {

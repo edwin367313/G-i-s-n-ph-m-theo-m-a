@@ -1,8 +1,8 @@
-const { sql } = require('./src/config/database');
+const { sql } = require('../../src/config/database');
 
 async function createNotificationsTable() {
   try {
-    const pool = await require('./src/config/database').getPool();
+    const pool = await require('../../src/config/database').getPool();
     
     console.log('Creating Notifications table...');
     

@@ -1,4 +1,4 @@
-const { getPool, closePool, sql } = require('./src/config/database');
+const { getPool, closePool, sql } = require('../../src/config/database');
 const bcrypt = require('bcryptjs');
 
 async function seedData() {

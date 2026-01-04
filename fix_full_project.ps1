@@ -66,7 +66,7 @@ try {
 Write-Host "`n[2/4] Verifying Backend Connection..." -ForegroundColor Cyan
 Set-Location "$PSScriptRoot\backend"
 try {
-    node test-connection-detailed.js
+    node scripts/tests/test-connection-detailed.js
     if ($LASTEXITCODE -eq 0) {
         Write-Host "   ✅ Backend connection verified!" -ForegroundColor Green
     } else {
