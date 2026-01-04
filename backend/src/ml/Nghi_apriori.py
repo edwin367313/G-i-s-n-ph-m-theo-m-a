@@ -13,7 +13,7 @@ class MarketBasketAnalyzer:
         self.conn_str = (
             f"DRIVER={{ODBC Driver 17 for SQL Server}};"
             f"SERVER={os.getenv('DB_SERVER', os.getenv('DB_HOST'))};"
-            f"DATABASE={os.getenv('DB_NAME')};"
+            f"DATABASE={os.getenv('DB_DATABASE', os.getenv('DB_NAME'))};"
             f"UID={os.getenv('DB_USER')};"
             f"PWD={os.getenv('DB_PASSWORD')}"
         )
