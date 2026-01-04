@@ -194,9 +194,10 @@ class CustomerSegmentation:
 
 if __name__ == "__main__":
     segmenter = CustomerSegmentation()
-    df, analysis = segmenter.segment_customers(n_clusters=3)
+    result = segmenter.segment_customers(n_clusters=3)
     
-    if df is not None:
+    if result is not None:
+        df, analysis = result
         print("\n" + "="*80)
         print("👥 PHÂN TÍCH PHÂN KHÚC KHÁCH HÀNG")
         print("="*80)

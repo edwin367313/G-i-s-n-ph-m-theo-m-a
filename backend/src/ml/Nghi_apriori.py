@@ -56,15 +56,15 @@ class MarketBasketAnalyzer:
         # Chuyển đổi sang định dạng one-hot encoding
         te = TransactionEncoder()
         te_ary = te.fit(transactions).transform(transactions)
-        df = pd.DataFrame(te_ary, columns=te.columns_)
+        df = pd.DataFrame(te_ary, columns=te.columns_)  # type: ignore
         
         # Tìm itemsets phổ biến
-        frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)
+        frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)  # type: ignore
         print(f"✅ Tìm thấy {len(frequent_itemsets)} itemsets phổ biến")
         
         # Tạo luật kết hợp
         if len(frequent_itemsets) > 0:
-            rules = association_rules(
+            rules = association_rules(  # type: ignore
                 frequent_itemsets, 
                 metric="confidence", 
                 min_threshold=min_confidence
@@ -93,14 +93,14 @@ class MarketBasketAnalyzer:
         """Format kết quả để trả về API"""
         formatted_rules = []
         
-        for _, rule in rules.iterrows():
+        for _, rule in rules.iterrows():  # type: ignore
             formatted_rules.append({
-                'antecedents': list(rule['antecedents']),
-                'consequents': list(rule['consequents']),
+                'antecedents': list(rule['antecedents']),  # type: ignore
+                'consequents': list(rule['consequents']),  # type: ignore
                 'support': float(rule['support']),
                 'confidence': float(rule['confidence']),
                 'lift': float(rule['lift']),
-                'description': f"{', '.join(rule['antecedents'])} → {', '.join(rule['consequents'])}"
+                'description': f"{', '.join(rule['antecedents'])} → {', '.join(rule['consequents'])}"  # type: ignore
             })
         
         return {

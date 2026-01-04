@@ -149,7 +149,7 @@ class CustomerClassifier:
         if self.dt_model is None:
             return []
         
-        importances = self.dt_model.feature_importances_
+        importances = self.dt_model.feature_importances_  # type: ignore
         
         feature_importance = []
         for name, importance in zip(feature_names, importances):
@@ -198,21 +198,21 @@ class CustomerClassifier:
         metadata = joblib.load(os.path.join(models_dir, 'dt_metadata.pkl'))
         
         # Chuẩn bị dữ liệu
-        X = pd.DataFrame([customer_features])[metadata['feature_columns']]
+        X = pd.DataFrame([customer_features])[metadata['feature_columns']]  # type: ignore
         
         # Dự đoán
-        prediction = self.dt_model.predict(X)[0]
-        probabilities = self.dt_model.predict_proba(X)[0]
+        prediction = self.dt_model.predict(X)[0]  # type: ignore
+        probabilities = self.dt_model.predict_proba(X)[0]  # type: ignore
         
         # Lấy nhãn
-        label = metadata['label_mapping'][prediction]
+        label = metadata['label_mapping'][prediction]  # type: ignore
         
         # Tạo kết quả chi tiết
         result = {
             'label': label,
             'confidence': float(max(probabilities)),
             'probabilities': {
-                metadata['label_mapping'][i]: float(prob) 
+                metadata['label_mapping'][i]: float(prob)  # type: ignore
                 for i, prob in enumerate(probabilities)
             }
         }
