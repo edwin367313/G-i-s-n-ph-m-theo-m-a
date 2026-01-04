@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const mlController = require('../controllers/mlController');
+const mlController = require('../controllers/Nghi_mlController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 const { adminOnly } = require('../middlewares/roleMiddleware');
 
