@@ -12,7 +12,7 @@ class MLController {
     try {
       const { minSupport = 0.01, minConfidence = 0.3, limit = 10 } = req.query;
       
-      const result = await runPythonScript('step1_apriori.py', [
+      const result = await runPythonScript('Nghi_apriori.py', [
         '--min-support', minSupport,
         '--min-confidence', minConfidence,
         '--limit', limit
@@ -40,7 +40,7 @@ class MLController {
     try {
       const { nClusters = 3 } = req.body;
       
-      const result = await runPythonScript('step2_kmeans.py', [
+      const result = await runPythonScript('Nghi_kmeans.py', [
         '--n-clusters', nClusters
       ]);
       
@@ -66,7 +66,7 @@ class MLController {
     try {
       const { maxDepth = 5 } = req.body;
       
-      const result = await runPythonScript('step3_decision_tree.py', [
+      const result = await runPythonScript('Nghi_decisiontree.py', [
         '--max-depth', maxDepth
       ]);
       
@@ -138,15 +138,15 @@ class MLController {
       
       // Bước 1: Apriori
       console.log('📦 Bước 1: Phân tích giỏ hàng...');
-      const aprioriResult = await runPythonScript('step1_apriori.py');
+      const aprioriResult = await runPythonScript('Nghi_apriori.py');
       
       // Bước 2: K-Means
       console.log('👥 Bước 2: Phân khúc khách hàng...');
-      const kmeansResult = await runPythonScript('step2_kmeans.py');
+      const kmeansResult = await runPythonScript('Nghi_kmeans.py');
       
       // Bước 3: Decision Tree
       console.log('🌳 Bước 3: Huấn luyện Decision Tree...');
-      const dtResult = await runPythonScript('step3_decision_tree.py');
+      const dtResult = await runPythonScript('Nghi_decisiontree.py');
       
       res.json({
         success: true,

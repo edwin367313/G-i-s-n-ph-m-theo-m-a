@@ -79,13 +79,13 @@ Download và cài đặt: [ODBC Driver 17 for SQL Server](https://learn.microsof
 
 ```bash
 # Bước 1: Phân tích giỏ hàng
-python src/ml/step1_apriori.py
+python src/ml/Nghi_apriori.py
 
 # Bước 2: Phân khúc khách hàng
-python src/ml/step2_kmeans.py
+python src/ml/Nghi_kmeans.py
 
 # Bước 3 & 4: Huấn luyện Decision Tree
-python src/ml/step3_decision_tree.py
+python src/ml/Nghi_decisiontree.py
 ```
 
 ### Sử Dụng Qua API
@@ -161,9 +161,9 @@ Authorization: Bearer {admin_token}
 
 ```
 backend/src/ml/
-├── step1_apriori.py           # Phân tích giỏ hàng
-├── step2_kmeans.py            # Phân khúc khách hàng
-├── step3_decision_tree.py     # Huấn luyện Decision Tree
+├── Nghi_apriori.py            # Phân tích giỏ hàng
+├── Nghi_kmeans.py             # Phân khúc khách hàng
+├── Nghi_decisiontree.py       # Huấn luyện Decision Tree
 ├── models/                    # Lưu models đã train
 │   ├── kmeans_model.pkl
 │   ├── scaler.pkl
