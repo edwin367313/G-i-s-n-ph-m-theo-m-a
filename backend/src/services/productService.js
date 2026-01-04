@@ -110,11 +110,15 @@ const createProduct = async (productData) => {
     price,
     discount_percent = 0,
     stock,
+    categoryId,
     category_id,
     images = '[]',
     unit,
     status = 'active'
   } = productData;
+
+  // Normalize category_id field
+  const finalCategoryId = category_id || categoryId;
 
   const result = await query(`
     INSERT INTO Products (name, description, price, discount_percent, stock, category_id, images, unit, status, created_at)
@@ -126,7 +130,7 @@ const createProduct = async (productData) => {
     price,
     discount_percent,
     stock,
-    category_id,
+    category_id: finalCategoryId,
     images: JSON.stringify(images),
     unit,
     status

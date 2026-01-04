@@ -59,34 +59,37 @@ const ProductFormPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const formData = new FormData();
-      Object.keys(values).forEach(key => {
-        if (values[key] !== undefined && values[key] !== null) {
-          formData.append(key, values[key]);
-        }
-      });
+      // Prepare data as JSON object
+      const productData = {
+        name: values.name,
+        price: values.price,
+        stock: values.stock,
+        category_id: values.category_id,
+        description: values.description || '',
+        unit: values.unit || 'gói'
+      };
 
-      if (fileList.length > 0) {
-        fileList.forEach(file => {
-          formData.append('images', file.originFileObj);
-        });
-      }
+      console.log('Sending product data:', productData);
 
       if (isEdit) {
-        await api.put(`/products/${id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await api.put(`/products/${id}`, productData);
         message.success('Cập nhật sản phẩm thành công');
       } else {
-        await api.post('/products', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await api.post('/products', productData);
         message.success('Thêm sản phẩm thành công');
       }
       navigate('/admin/products');
     } catch (error) {
-      console.error(error);
-      message.error('Có lỗi xảy ra');
+      console.error('Error:', error);
+      const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra';
+      const errors = error.response?.data?.errors;
+      if (errors && errors.length > 0) {
+        errors.forEach(err => {
+          message.error(`${err.field}: ${err.message}`);
+        });
+      } else {
+        message.error(errorMsg);
+      }
     } finally {
       setLoading(false);
     }

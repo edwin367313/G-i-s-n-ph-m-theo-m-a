@@ -6,7 +6,7 @@ class Category {
    */
   static async findAll() {
     try {
-      const result = await query('SELECT id, name, description, icon FROM Categories ORDER BY name ASC');
+      const result = await query('SELECT id, name, description FROM Categories ORDER BY name ASC');
       return result;
     } catch (error) {
       throw new Error(`Error getting categories: ${error.message}`);
@@ -19,7 +19,7 @@ class Category {
   static async findById(categoryId) {
     try {
       const result = await query(
-        'SELECT id, name, description, icon FROM Categories WHERE id = @categoryId',
+        'SELECT id, name, description FROM Categories WHERE id = @categoryId',
         { categoryId }
       );
       return result[0] || null;
@@ -33,12 +33,12 @@ class Category {
    */
   static async create(categoryData) {
     try {
-      const { name, description, icon } = categoryData;
+      const { name, description } = categoryData;
       const result = await query(
-        `INSERT INTO Categories (name, description, icon) 
-         OUTPUT INSERTED.id, INSERTED.name, INSERTED.description, INSERTED.icon
-         VALUES (@name, @description, @icon)`,
-        { name, description, icon }
+        `INSERT INTO Categories (name, description) 
+         OUTPUT INSERTED.id, INSERTED.name, INSERTED.description
+         VALUES (@name, @description)`,
+        { name, description }
       );
       return result[0];
     } catch (error) {
@@ -51,15 +51,14 @@ class Category {
    */
   static async update(categoryId, categoryData) {
     try {
-      const { name, description, icon } = categoryData;
+      const { name, description } = categoryData;
       const result = await query(
         `UPDATE Categories 
          SET name = COALESCE(@name, name),
-             description = COALESCE(@description, description),
-             icon = COALESCE(@icon, icon)
-         OUTPUT INSERTED.id, INSERTED.name, INSERTED.description, INSERTED.icon
+             description = COALESCE(@description, description)
+         OUTPUT INSERTED.id, INSERTED.name, INSERTED.description
          WHERE id = @categoryId`,
-        { categoryId, name, description, icon }
+        { categoryId, name, description }
       );
       return result[0];
     } catch (error) {

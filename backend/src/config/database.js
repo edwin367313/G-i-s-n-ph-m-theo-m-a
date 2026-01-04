@@ -3,8 +3,8 @@ require('dotenv').config();
 
 // SQL Server configuration
 const config = {
-  server: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'SieuThiABC',
+  server: process.env.DB_SERVER || process.env.DB_HOST || 'localhost',
+  database: process.env.DB_DATABASE || process.env.DB_NAME || 'SieuThiABC',
   user: process.env.DB_USER || 'sa',
   password: process.env.DB_PASSWORD,
   port: parseInt(process.env.DB_PORT) || 1433,

@@ -1,9 +1,7 @@
 const Payment = require('../models/Minh_Payment');
 const Order = require('../models/Order');
 const { generatePaymentCode, sleep } = require('../utils/helpers');
-const MomoGateway = require('../payment-gateways/momoGateway');
-const ZaloPayGateway = require('../payment-gateways/zaloPayGateway');
-const PayPalGateway = require('../payment-gateways/paypalGateway');
+const paymentConfig = require('../config/payment');
 
 // Payment processing delay - 20 seconds
 const PAYMENT_PROCESSING_DELAY = 20000;
@@ -18,6 +16,12 @@ const createPayment = async (orderId, paymentMethod) => {
     throw new Error('Đơn hàng không tồn tại');
   }
 
+  // Validate payment method
+  const validMethods = Object.values(paymentConfig.methods);
+  if (!validMethods.includes(paymentMethod)) {
+    throw new Error('Phương thức thanh toán không hợp lệ');
+  }
+
   // Tạo payment record
   const payment = await Payment.create({
     orderId,
@@ -28,21 +32,31 @@ const createPayment = async (orderId, paymentMethod) => {
     transactionId: null
   });
 
-  let paymentUrl = null;
+  let paymentData = null;
 
-  // Tạo payment URL dựa vào method
+  // Tạo payment data dựa vào method
   switch (paymentMethod) {
-    case 'momo':
-      paymentUrl = await MomoGateway.createPayment(payment.paymentCode, order.total, order.orderCode);
-      break;
-    case 'zalopay':
-      paymentUrl = await ZaloPayGateway.createPayment(payment.paymentCode, order.total, order.orderCode);
-      break;
-    case 'paypal':
-      paymentUrl = await PayPalGateway.createPayment(payment.paymentCode, order.total, order.orderCode);
+    case 'bank_transfer':
+      // Generate QR code info for bank transfer
+      const transferContent = paymentConfig.bankTransfer.transferContent
+        .replace('[ORDER_CODE]', order.orderCode);
+      
+      paymentData = {
+        bankName: paymentConfig.bankTransfer.bankName,
+        accountNumber: paymentConfig.bankTransfer.accountNumber,
+        accountName: paymentConfig.bankTransfer.accountName,
+        amount: order.total,
+        transferContent,
+        qrCodeUrl: paymentConfig.bankTransfer.qrCodeUrl,
+        note: `Vui lòng chuyển khoản với nội dung: ${transferContent}`
+      };
       break;
     case 'cod':
-      paymentUrl = null;
+      paymentData = {
+        note: 'Thanh toán khi nhận hàng'
+      };
+      // COD is auto-confirmed
+      await payment.update({ status: 'pending_confirmation' });
       break;
     default:
       throw new Error('Phương thức thanh toán không hợp lệ');
@@ -50,35 +64,45 @@ const createPayment = async (orderId, paymentMethod) => {
 
   return {
     payment,
-    paymentUrl
+    paymentData
   };
 };
 
 /**
- * Xử lý thanh toán - Momo
+ * Xử lý thanh toán chuyển khoản ngân hàng
  */
-const processMomoPayment = async (paymentCode) => {
+const processBankTransferPayment = async (paymentCode, transactionId = null) => {
   const payment = await Payment.findOne({ where: { paymentCode } });
 
   if (!payment) {
     throw new Error('Thanh toán không tồn tại');
   }
 
-  // Simulate 20 seconds processing
+  if (payment.paymentMethod !== 'bank_transfer') {
+    throw new Error('Phương thức thanh toán không đúng');
+  }
+
+  // Simulate 20 seconds processing (checking bank transaction)
   await sleep(PAYMENT_PROCESSING_DELAY);
 
-  // Process payment with 90% success rate
-  const result = await MomoGateway.processPayment(paymentCode, payment.amount);
+  // Simulate 90% success rate
+  const success = Math.random() < 0.9;
+  const finalTransactionId = transactionId || `BANK_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
   // Update payment status
   await payment.update({
-    status: result.success ? 'success' : 'failed',
-    transactionId: result.transactionId,
-    responseData: result
+    status: success ? 'success' : 'failed',
+    transactionId: success ? finalTransactionId : null,
+    responseData: {
+      success,
+      transactionId: finalTransactionId,
+      timestamp: new Date().toISOString(),
+      message: success ? 'Đã xác nhận chuyển khoản thành công' : 'Không tìm thấy giao dịch chuyển khoản'
+    }
   });
 
   // Update order payment status
-  if (result.success) {
+  if (success) {
     await Order.update(
       { paymentStatus: 'paid', orderStatus: 'confirmed' },
       { where: { id: payment.orderId } }
@@ -86,126 +110,45 @@ const processMomoPayment = async (paymentCode) => {
   }
 
   return {
-    success: result.success,
-    message: result.message,
+    success,
+    message: success ? 'Thanh toán thành công' : 'Thanh toán thất bại',
     payment
   };
 };
 
 /**
- * Xử lý thanh toán - ZaloPay
+ * Xác nhận thanh toán COD (Admin only)
  */
-const processZaloPayPayment = async (paymentCode) => {
+const confirmCODPayment = async (paymentCode) => {
   const payment = await Payment.findOne({ where: { paymentCode } });
 
   if (!payment) {
     throw new Error('Thanh toán không tồn tại');
   }
 
-  // Simulate 20 seconds processing
-  await sleep(PAYMENT_PROCESSING_DELAY);
-
-  const result = await ZaloPayGateway.processPayment(paymentCode, payment.amount);
-
-  await payment.update({
-    status: result.success ? 'success' : 'failed',
-    transactionId: result.transactionId,
-    responseData: result
-  });
-
-  if (result.success) {
-    await Order.update(
-      { paymentStatus: 'paid', orderStatus: 'confirmed' },
-      { where: { id: payment.orderId } }
-    );
-  }
-
-  return {
-    success: result.success,
-    message: result.message,
-    payment
-  };
-};
-
-/**
- * Xử lý thanh toán - PayPal
- */
-const processPayPalPayment = async (paymentCode) => {
-  const payment = await Payment.findOne({ where: { paymentCode } });
-
-  if (!payment) {
-    throw new Error('Thanh toán không tồn tại');
-  }
-
-  // Simulate 20 seconds processing
-  await sleep(PAYMENT_PROCESSING_DELAY);
-
-  const result = await PayPalGateway.processPayment(paymentCode, payment.amount);
-
-  await payment.update({
-    status: result.success ? 'success' : 'failed',
-    transactionId: result.transactionId,
-    responseData: result
-  });
-
-  if (result.success) {
-    await Order.update(
-      { paymentStatus: 'paid', orderStatus: 'confirmed' },
-      { where: { id: payment.orderId } }
-    );
-  }
-
-  return {
-    success: result.success,
-    message: result.message,
-    payment
-  };
-};
-
-/**
- * Callback handler cho các payment gateways
- */
-const handlePaymentCallback = async (paymentMethod, callbackData) => {
-  let paymentCode;
-  let isValid = false;
-
-  switch (paymentMethod) {
-    case 'momo':
-      isValid = MomoGateway.verifyCallback(callbackData);
-      paymentCode = callbackData.paymentCode;
-      break;
-    case 'zalopay':
-      isValid = ZaloPayGateway.verifyCallback(callbackData);
-      paymentCode = callbackData.paymentCode;
-      break;
-    case 'paypal':
-      isValid = PayPalGateway.verifyCallback(callbackData);
-      paymentCode = callbackData.paymentCode;
-      break;
-  }
-
-  if (!isValid) {
-    throw new Error('Callback không hợp lệ');
-  }
-
-  const payment = await Payment.findOne({ where: { paymentCode } });
-
-  if (!payment) {
-    throw new Error('Thanh toán không tồn tại');
+  if (payment.paymentMethod !== 'cod') {
+    throw new Error('Phương thức thanh toán không đúng');
   }
 
   await payment.update({
     status: 'success',
-    transactionId: callbackData.transactionId,
-    responseData: callbackData
+    transactionId: `COD_${Date.now()}`,
+    responseData: {
+      confirmedAt: new Date().toISOString(),
+      message: 'Đã nhận tiền COD'
+    }
   });
 
   await Order.update(
-    { paymentStatus: 'paid', orderStatus: 'confirmed' },
+    { paymentStatus: 'paid' },
     { where: { id: payment.orderId } }
   );
 
-  return payment;
+  return {
+    success: true,
+    message: 'Xác nhận thanh toán COD thành công',
+    payment
+  };
 };
 
 /**
@@ -238,19 +181,26 @@ const refundPayment = async (paymentCode) => {
     throw new Error('Chỉ có thể hoàn tiền cho thanh toán thành công');
   }
 
-  // TODO: Implement actual refund logic for each gateway
+  await payment.update({ 
+    status: 'refunded',
+    responseData: {
+      ...payment.responseData,
+      refundedAt: new Date().toISOString()
+    }
+  });
 
-  await payment.update({ status: 'refunded' });
+  await Order.update(
+    { paymentStatus: 'refunded', orderStatus: 'cancelled' },
+    { where: { id: payment.orderId } }
+  );
 
   return payment;
 };
 
 module.exports = {
   createPayment,
-  processMomoPayment,
-  processZaloPayPayment,
-  processPayPalPayment,
-  handlePaymentCallback,
+  processBankTransferPayment,
+  confirmCODPayment,
   getPaymentStatus,
   refundPayment
 };

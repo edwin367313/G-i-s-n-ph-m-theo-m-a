@@ -13,7 +13,10 @@ const getProductById = asyncHandler(async (req, res) => {
 });
 
 const createProduct = asyncHandler(async (req, res) => {
+  console.log('📦 CREATE PRODUCT REQUEST:', req.body);
+  console.log('👤 User:', req.user?.username);
   const product = await productService.createProduct(req.body);
+  console.log('✅ Product created:', product);
   return successResponse(res, { product }, 'Tạo sản phẩm thành công', 201);
 });
 

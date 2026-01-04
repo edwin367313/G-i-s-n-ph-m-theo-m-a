@@ -8,7 +8,9 @@ const { asyncHandler } = require('../middlewares/errorMiddleware');
  * @access  Public
  */
 const register = asyncHandler(async (req, res) => {
+  console.log('📝 REGISTER REQUEST:', req.body);
   const result = await authService.register(req.body);
+  console.log('✅ Register successful:', result.user.username);
   return successResponse(res, result, 'Đăng ký thành công', 201);
 });
 

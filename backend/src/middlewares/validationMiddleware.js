@@ -98,7 +98,7 @@ const createProductSchema = Joi.object({
     .messages({
       'any.required': 'Tên sản phẩm là bắt buộc'
     }),
-  description: Joi.string().max(5000),
+  description: Joi.string().max(5000).allow('', null),
   price: Joi.number().min(0).required()
     .messages({
       'number.min': 'Giá phải lớn hơn hoặc bằng 0',
@@ -106,14 +106,15 @@ const createProductSchema = Joi.object({
     }),
   discountPercent: Joi.number().min(0).max(100).default(0),
   stock: Joi.number().integer().min(0).default(0),
-  categoryId: Joi.number().integer().required()
-    .messages({
-      'any.required': 'Danh mục là bắt buộc'
-    }),
+  categoryId: Joi.number().integer(),
+  category_id: Joi.number().integer(),
   images: Joi.array().items(Joi.string().uri()),
-  unit: Joi.string().max(50),
+  unit: Joi.string().max(50).allow('', null),
   status: Joi.string().valid('active', 'inactive').default('active')
-});
+}).or('categoryId', 'category_id')
+  .messages({
+    'object.missing': 'Danh mục là bắt buộc'
+  });
 
 const updateProductSchema = Joi.object({
   name: Joi.string().min(2).max(200),

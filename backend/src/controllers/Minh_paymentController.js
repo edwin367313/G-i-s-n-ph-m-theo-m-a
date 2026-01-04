@@ -8,37 +8,16 @@ const createPayment = asyncHandler(async (req, res) => {
   return successResponse(res, result, 'Tạo thanh toán thành công', 201);
 });
 
-const processMomoPayment = asyncHandler(async (req, res) => {
-  const { paymentCode } = req.body;
-  const result = await paymentService.processMomoPayment(paymentCode);
+const processBankTransferPayment = asyncHandler(async (req, res) => {
+  const { paymentCode, transactionId } = req.body;
+  const result = await paymentService.processBankTransferPayment(paymentCode, transactionId);
   return successResponse(res, result, result.message);
 });
 
-const processZaloPayPayment = asyncHandler(async (req, res) => {
+const confirmCODPayment = asyncHandler(async (req, res) => {
   const { paymentCode } = req.body;
-  const result = await paymentService.processZaloPayPayment(paymentCode);
+  const result = await paymentService.confirmCODPayment(paymentCode);
   return successResponse(res, result, result.message);
-});
-
-const processPayPalPayment = asyncHandler(async (req, res) => {
-  const { paymentCode } = req.body;
-  const result = await paymentService.processPayPalPayment(paymentCode);
-  return successResponse(res, result, result.message);
-});
-
-const handleMomoCallback = asyncHandler(async (req, res) => {
-  const payment = await paymentService.handlePaymentCallback('momo', req.body);
-  return successResponse(res, { payment }, 'Callback xử lý thành công');
-});
-
-const handleZaloPayCallback = asyncHandler(async (req, res) => {
-  const payment = await paymentService.handlePaymentCallback('zalopay', req.body);
-  return successResponse(res, { payment }, 'Callback xử lý thành công');
-});
-
-const handlePayPalCallback = asyncHandler(async (req, res) => {
-  const payment = await paymentService.handlePaymentCallback('paypal', req.body);
-  return successResponse(res, { payment }, 'Callback xử lý thành công');
 });
 
 const getPaymentStatus = asyncHandler(async (req, res) => {
@@ -53,12 +32,8 @@ const refundPayment = asyncHandler(async (req, res) => {
 
 module.exports = {
   createPayment,
-  processMomoPayment,
-  processZaloPayPayment,
-  processPayPalPayment,
-  handleMomoCallback,
-  handleZaloPayCallback,
-  handlePayPalCallback,
+  processBankTransferPayment,
+  confirmCODPayment,
   getPaymentStatus,
   refundPayment
 };

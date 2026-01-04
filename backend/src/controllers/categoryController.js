@@ -7,7 +7,7 @@ const { successResponse, errorResponse } = require('../utils/helpers');
 const getAllCategories = async (req, res) => {
   try {
     const categories = await Category.findAll();
-    return successResponse(res, 'Lấy danh sách danh mục thành công', categories);
+    return successResponse(res, categories, 'Lấy danh sách danh mục thành công');
   } catch (error) {
     return errorResponse(res, error.message, 500);
   }
@@ -25,7 +25,7 @@ const getCategoryById = async (req, res) => {
       return errorResponse(res, 'Không tìm thấy danh mục', 404);
     }
     
-    return successResponse(res, 'Lấy thông tin danh mục thành công', category);
+    return successResponse(res, category, 'Lấy thông tin danh mục thành công');
   } catch (error) {
     return errorResponse(res, error.message, 500);
   }
@@ -37,7 +37,7 @@ const getCategoryById = async (req, res) => {
 const createCategory = async (req, res) => {
   try {
     const category = await Category.create(req.body);
-    return successResponse(res, 'Tạo danh mục thành công', category, 201);
+    return successResponse(res, category, 'Tạo danh mục thành công', 201);
   } catch (error) {
     return errorResponse(res, error.message, 500);
   }
@@ -55,7 +55,7 @@ const updateCategory = async (req, res) => {
       return errorResponse(res, 'Không tìm thấy danh mục', 404);
     }
     
-    return successResponse(res, 'Cập nhật danh mục thành công', category);
+    return successResponse(res, category, 'Cập nhật danh mục thành công');
   } catch (error) {
     return errorResponse(res, error.message, 500);
   }
@@ -68,7 +68,7 @@ const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
     await Category.delete(id);
-    return successResponse(res, 'Xóa danh mục thành công');
+    return successResponse(res, null, 'Xóa danh mục thành công');
   } catch (error) {
     return errorResponse(res, error.message, 500);
   }
