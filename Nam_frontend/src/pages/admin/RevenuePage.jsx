@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Statistic, Table, Button, DatePicker, message } from 'antd';
+import { Card, Row, Col, Select, Statistic, Table, Button, DatePicker, message, Tooltip as AntTooltip } from 'antd';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { ArrowUpOutlined, ArrowDownOutlined, DownloadOutlined } from '@ant-design/icons';
+import { ArrowUpOutlined, ArrowDownOutlined, DownloadOutlined, LinkOutlined } from '@ant-design/icons';
 import revenueService from '../../services/revenueService';
 import { formatCurrency } from '../../utils/helpers';
 import dayjs from 'dayjs';
+import AprioriDrillDown from '../../components/Analytics/AprioriDrillDown';
+import CustomerSegmentation from '../../components/Analytics/CustomerSegmentation';
 
 const { RangePicker } = DatePicker;
 
@@ -20,6 +22,9 @@ const RevenuePage = () => {
   const [categoryData, setCategoryData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [aprioriModalVisible, setAprioriModalVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [segmentDateFilter, setSegmentDateFilter] = useState(null);
 
   const fetchOverview = async () => {
     try {
@@ -223,13 +228,41 @@ const RevenuePage = () => {
       {/* Top Products */}
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Card title="Top 5 sản phẩm bán chạy nhất">
+          <Card 
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <LinkOutlined />
+                <span>Phân tích Apriori - Sản phẩm liên kết</span>
+                <AntTooltip title="Click vào sản phẩm để xem các nhóm sản phẩm thường được mua cùng">
+                  <span style={{ fontSize: '14px', color: '#666', cursor: 'help' }}>
+                    (?
+                  </span>
+                </AntTooltip>
+              </div>
+            }
+          >
             <Table 
               dataSource={topProducts} 
               rowKey="id"
               pagination={false}
+              onRow={(record) => ({
+                onClick: () => {
+                  setSelectedProduct({ id: record.id, name: record.name });
+                  setAprioriModalVisible(true);
+                },
+                style: { cursor: 'pointer' }
+              })}
               columns={[
-                { title: 'Sản phẩm', dataIndex: 'name', key: 'name' },
+                { 
+                  title: 'Sản phẩm', 
+                  dataIndex: 'name', 
+                  key: 'name',
+                  render: (text) => (
+                    <span style={{ color: '#1890ff', fontWeight: 500 }}>
+                      {text}
+                    </span>
+                  )
+                },
                 { title: 'Số lượng bán', dataIndex: 'sold_quantity', key: 'sold_quantity' },
                 { title: 'Doanh thu', dataIndex: 'revenue', key: 'revenue', render: val => formatCurrency(val) }
               ]}
@@ -237,6 +270,26 @@ const RevenuePage = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Customer Segmentation */}
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col span={24}>
+          <CustomerSegmentation 
+            dateFilter={segmentDateFilter}
+            onDateChange={(date) => setSegmentDateFilter(date)}
+          />
+        </Col>
+      </Row>
+
+      {/* Apriori Modal */}
+      <AprioriDrillDown
+        visible={aprioriModalVisible}
+        product={selectedProduct}
+        onClose={() => {
+          setAprioriModalVisible(false);
+          setSelectedProduct(null);
+        }}
+      />
     </div>
   );
 };

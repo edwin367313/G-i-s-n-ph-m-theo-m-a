@@ -15,9 +15,10 @@ const config = {
     connectTimeout: 30000,
     requestTimeout: 30000,
     instanceName: process.env.DB_INSTANCE || undefined,
-    // Force UTF-8 encoding
     useUTC: false,
-    charset: 'UTF-8'
+    // Force UTF-8 encoding for Vietnamese text
+    appName: 'SieuThiABC',
+    abortTransactionOnError: false
   },
   pool: {
     max: 10,

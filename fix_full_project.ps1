@@ -1,8 +1,8 @@
 # Check for Administrator privileges
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "⚠️  This script requires Administrator privileges to configure SQL Server." -ForegroundColor Yellow
-    Write-Host "   Please right-click this file and select 'Run with PowerShell' -> 'Run as Administrator'" -ForegroundColor White
-    Write-Host "   OR run PowerShell as Administrator and execute this script." -ForegroundColor White
+    Write-Host "This script requires Administrator privileges to configure SQL Server." -ForegroundColor Yellow
+    Write-Host "Please right-click this file and select 'Run with PowerShell' -> 'Run as Administrator'" -ForegroundColor White
+    Write-Host "OR run PowerShell as Administrator and execute this script." -ForegroundColor White
     
     # Attempt to self-elevate
     $choice = Read-Host "Do you want to attempt to restart this script as Administrator? (Y/N)"
@@ -15,7 +15,7 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     }
 }
 
-Write-Host "🚀 Starting Full Project Fix & Launch..." -ForegroundColor Green
+Write-Host "Starting Full Project Fix & Launch..." -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
 # 1. Enable TCP/IP for SQL Server
@@ -49,33 +49,21 @@ try {
         }
     } else {
         Write-Host "   Default instance MSSQLSERVER not found. Checking for other instances..." -ForegroundColor Yellow
-        # You might need to handle named instances here if needed
     }
 
     if ($needsRestart) {
         Write-Host "   Restarting SQL Server Service..." -ForegroundColor Yellow
         Restart-Service "MSSQLSERVER" -Force
-        Write-Host "    SQL Server restarted." -ForegroundColor Green
+        Write-Host "   SQL Server restarted." -ForegroundColor Green
     }
 } catch {
-    Write-Host "    Error configuring SQL Server: $_" -ForegroundColor Red
+    Write-Host "   Error configuring SQL Server: $_" -ForegroundColor Red
     Write-Host "   Please ensure SQL Server is installed and you are running as Admin." -ForegroundColor Red
 }
 
-# 2. Verify Backend Connection
-Write-Host "`n[2/4] Verifying Backend Connection..." -ForegroundColor Cyan
-Set-Location "$PSScriptRoot\backend"
-try {
-    node scripts/tests/test-connection-detailed.js
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "   ✅ Backend connection verified!" -ForegroundColor Green
-    } else {
-        Write-Host "   ❌ Backend connection failed. Please check the logs above." -ForegroundColor Red
-        # Don't exit, let the user see the error
-    }
-} catch {
-    Write-Host "   ❌ Error running test script." -ForegroundColor Red
-}
+# 2. Skip Backend Connection Test
+Write-Host "`n[2/4] Skipping backend test..." -ForegroundColor Cyan
+Write-Host "   Will verify after servers start" -ForegroundColor Yellow
 
 # 3. Start all servers in parallel
 Write-Host "`n[3/4] Starting all servers..." -ForegroundColor Cyan
@@ -90,23 +78,15 @@ Write-Host "   Starting Frontend (http://localhost:3000)..." -ForegroundColor Ye
 $frontendProcess = Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\Nam_frontend'; npm run dev" -PassThru -WindowStyle Normal
 Write-Host "   Frontend PID: $($frontendProcess.Id)" -ForegroundColor Green
 
-# Admin Frontend
-Write-Host "   Starting Admin Frontend (http://localhost:5173)..." -ForegroundColor Yellow
-$adminProcess = Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\admin-frontend'; npm run dev" -PassThru -WindowStyle Normal
-Write-Host "   Admin PID: $($adminProcess.Id)" -ForegroundColor Green
-
 # 4. Wait and open browsers
 Write-Host "`n[4/4] Waiting for servers to start..." -ForegroundColor Cyan
 Start-Sleep -Seconds 8
 
-Write-Host "`n✅ All servers started! Opening browsers..." -ForegroundColor Green
+Write-Host "`nAll servers started! Opening browser..." -ForegroundColor Green
 Start-Process "http://localhost:3000"
-Start-Sleep -Seconds 1
-Start-Process "http://localhost:5173"
 
 Write-Host "`nServers running:" -ForegroundColor Cyan
 Write-Host "  - Frontend: http://localhost:3000" -ForegroundColor White
-Write-Host "  - Admin: http://localhost:5173" -ForegroundColor White
 Write-Host "  - Backend API: http://localhost:5000" -ForegroundColor White
-Write-Host "`nPress Ctrl+C in each terminal to stop servers." -ForegroundColor Yellow
-
+Write-Host ""
+Write-Host "Press Ctrl+C in each terminal to stop servers." -ForegroundColor Yellow

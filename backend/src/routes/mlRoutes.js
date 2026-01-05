@@ -46,4 +46,36 @@ router.post('/predict-customer', mlController.predictCustomerType);
  */
 router.post('/run-pipeline', mlController.runFullPipeline);
 
+/**
+ * @route   GET /api/ml/product-associations/:productId
+ * @desc    Lấy các itemsets liên quan đến 1 sản phẩm (2 & 3 sản phẩm)
+ * @access  Admin
+ * @params  productId - ID sản phẩm
+ * @query   minSupport, minConfidence, minLift
+ */
+router.get('/product-associations/:productId', mlController.getProductAssociations);
+
+/**
+ * @route   GET /api/ml/customer-segments
+ * @desc    Lấy danh sách segments với thống kê
+ * @access  Admin
+ */
+router.get('/customer-segments', mlController.getCustomerSegments);
+
+/**
+ * @route   GET /api/ml/segment/:segmentId/customers
+ * @desc    Lấy danh sách khách hàng trong 1 segment
+ * @access  Admin
+ * @params  segmentId - Tên segment (VIP, Thường xuyên, Vãng lai)
+ */
+router.get('/segment/:segmentId/customers', mlController.getSegmentCustomers);
+
+/**
+ * @route   GET /api/ml/customer/:customerId/purchase-history
+ * @desc    Lấy lịch sử mua hàng của khách (theo category)
+ * @access  Admin
+ * @params  customerId - ID khách hàng
+ */
+router.get('/customer/:customerId/purchase-history', mlController.getCustomerPurchaseHistory);
+
 module.exports = router;

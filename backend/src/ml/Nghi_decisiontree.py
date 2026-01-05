@@ -6,7 +6,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 import joblib
 import os
+import sys
 from dotenv import load_dotenv
+
+# Fix encoding for Windows console
+try:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')  # type: ignore
+except:
+    pass
 
 load_dotenv()
 
@@ -115,10 +123,10 @@ class CustomerClassifier:
         y_pred = self.dt_model.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
         
-        print(f"✅ Độ chính xác: {accuracy:.2%}")
+        print(f"Do chinh xac: {accuracy:.2%}")
         
         # In báo cáo chi tiết
-        print("\n📊 Báo cáo phân loại:")
+        print("\nBao cao phan loai:")
         target_names = [reverse_mapping[i] for i in sorted(reverse_mapping.keys())]
         print(classification_report(y_test, y_pred, target_names=target_names))
         
@@ -177,8 +185,6 @@ class CustomerClassifier:
             'feature_columns': feature_columns,
             'label_mapping': label_mapping
         }, os.path.join(models_dir, 'dt_metadata.pkl'))
-        
-        print("💾 Đã lưu Decision Tree model")
     
     def predict_customer_type(self, customer_features):
         """
@@ -236,7 +242,7 @@ if __name__ == "__main__":
         print(results['rules'])
         
         print("\n" + "="*80)
-        print("📊 ĐỘ QUAN TRỌNG CÁC FEATURES")
+        print("📊 ĐỘ QUAN TRỌNG CỦA FEATURES")
         print("="*80)
         for item in results['feature_importance']:
             print(f"  {item['feature']:20s}: {item['importance']:.3f}")

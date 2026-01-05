@@ -89,10 +89,20 @@ const startServer = async () => {
     console.log('✅ Kết nối database thành công');
 
     // Start server
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, '127.0.0.1', () => {
       console.log(`🚀 Server đang chạy trên port ${PORT}`);
       console.log(`📍 URL: http://localhost:${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+
+    server.on('error', (error) => {
+      console.error('❌ Server listen error:', error);
+      process.exit(1);
+    });
+
+    server.on('listening', () => {
+      const addr = server.address();
+      console.log(`✅ Server is actually listening on ${addr.address}:${addr.port}`);
     });
   } catch (error) {
     console.error('❌ Không thể khởi động server:', error);

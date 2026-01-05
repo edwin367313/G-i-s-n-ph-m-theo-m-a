@@ -4,7 +4,15 @@ from mlxtend.frequent_patterns import apriori, association_rules
 from mlxtend.preprocessing import TransactionEncoder
 import json
 import os
+import sys
 from dotenv import load_dotenv
+
+# Fix encoding for Windows console
+try:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')  # type: ignore
+except:
+    pass
 
 load_dotenv()
 
@@ -18,7 +26,7 @@ class MarketBasketAnalyzer:
             f"PWD={os.getenv('DB_PASSWORD')}"
         )
     
-    def get_transactions(self):
+    def get_transactions(self, month=None, year=None):
         """Lấy dữ liệu giao dịch từ database"""
         query = """
         SELECT 
@@ -27,15 +35,26 @@ class MarketBasketAnalyzer:
         FROM Orders o
         JOIN OrderItems oi ON o.id = oi.order_id
         JOIN Products p ON oi.product_id = p.id
-        WHERE o.status IN ('DELIVERED', 'paid', 'delivery')
-        ORDER BY o.id
+        WHERE o.status IN (N'Đã giao', N'Đá giao', 'DELIVERED')
         """
+        
+        # Thêm filter theo tháng nếu có
+        if month and year:
+            query += f" AND MONTH(o.created_at) = {month} AND YEAR(o.created_at) = {year}"
+            print(f"[Apriori] Filtering by month={month}, year={year}", file=sys.stderr)
+        else:
+            print(f"[Apriori] No date filter - using all orders", file=sys.stderr)
+        
+        query += " ORDER BY o.id"
         
         with pyodbc.connect(self.conn_str) as conn:
             df = pd.read_sql(query, conn)
         
+        print(f"[Apriori] Found {len(df)} order items", file=sys.stderr)
+        
         # Chuyển đổi thành danh sách transactions
         transactions = df.groupby('order_id')['product_name'].apply(list).values.tolist()
+        print(f"[Apriori] {len(transactions)} transactions", file=sys.stderr)
         return transactions
     
     def run_apriori(self, min_support=0.01, min_confidence=0.3, min_lift=1.0):
@@ -47,11 +66,8 @@ class MarketBasketAnalyzer:
             min_confidence: Độ tin cậy tối thiểu (0.3 = 30%)
             min_lift: Lift tối thiểu (1.0 = không ảnh hưởng)
         """
-        print(f"🔍 Đang phân tích giỏ hàng...")
-        
         # Lấy dữ liệu
         transactions = self.get_transactions()
-        print(f"📊 Tổng số đơn hàng: {len(transactions)}")
         
         # Chuyển đổi sang định dạng one-hot encoding
         te = TransactionEncoder()
@@ -60,7 +76,7 @@ class MarketBasketAnalyzer:
         
         # Tìm itemsets phổ biến
         frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)  # type: ignore
-        print(f"✅ Tìm thấy {len(frequent_itemsets)} itemsets phổ biến")
+        print(f"Tim thay {len(frequent_itemsets)} itemsets pho bien")
         
         # Tạo luật kết hợp
         if len(frequent_itemsets) > 0:
@@ -76,7 +92,7 @@ class MarketBasketAnalyzer:
             # Sắp xếp theo lift giảm dần
             rules = rules.sort_values('lift', ascending=False)
             
-            print(f"✅ Tìm thấy {len(rules)} luật kết hợp")
+            print(f"Tim thay {len(rules)} luat ket hop")
             
             return self._format_results(rules)
         else:
@@ -119,17 +135,97 @@ class MarketBasketAnalyzer:
         if results['rules']:
             return results['rules'][:limit]
         return []
+    
+    def get_product_associations(self, product_name, min_support=0.01, min_confidence=0.3, month=None, year=None):
+        """
+        Tìm các sản phẩm thường được mua cùng với product_name
+        Trả về itemsets_2 (2 sản phẩm) và itemsets_3 (3 sản phẩm)
+        """
+        # Chạy Apriori để lấy tất cả rules
+        transactions = self.get_transactions(month, year)
+        
+        if not transactions:
+            return {'itemsets_2': [], 'itemsets_3': []}
+        
+        # Chuyển đổi sang one-hot encoding
+        te = TransactionEncoder()
+        te_ary = te.fit(transactions).transform(transactions)
+        # Convert sparse matrix to dense array for pandas
+        if hasattr(te_ary, 'toarray'):
+            te_ary = te_ary.toarray()  # type: ignore
+        df = pd.DataFrame(te_ary, columns=te.columns_)  # type: ignore
+        
+        # Tìm frequent itemsets
+        frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)
+        
+        if len(frequent_itemsets) == 0:
+            return {'itemsets_2': [], 'itemsets_3': []}
+        
+        # Tạo association rules
+        rules = association_rules(
+            frequent_itemsets,
+            metric="confidence",
+            min_threshold=min_confidence
+        )
+        
+        # Dùng dict để deduplicate (key = frozenset của products, value = rule tốt nhất)
+        itemsets_2_dict = {}
+        itemsets_3_dict = {}
+        
+        # Lọc rules có chứa product_name
+        for _, rule in rules.iterrows():
+            antecedents = list(rule['antecedents'])
+            consequents = list(rule['consequents'])
+            all_products = antecedents + consequents
+            
+            # Chỉ lấy rules có chứa product_name
+            if product_name in all_products:
+                # Tạo key unique bằng frozenset (không phân biệt thứ tự)
+                products_key = frozenset(all_products)
+                
+                rule_data = {
+                    'products': sorted(all_products),  # Sort để consistent
+                    'support': float(rule['support']),
+                    'confidence': float(rule['confidence']),
+                    'lift': float(rule['lift'])
+                }
+                
+                if len(all_products) == 2:
+                    # Chỉ giữ rule có lift cao nhất cho mỗi nhóm sản phẩm
+                    if products_key not in itemsets_2_dict or rule_data['lift'] > itemsets_2_dict[products_key]['lift']:
+                        itemsets_2_dict[products_key] = rule_data
+                        
+                elif len(all_products) == 3:
+                    if products_key not in itemsets_3_dict or rule_data['lift'] > itemsets_3_dict[products_key]['lift']:
+                        itemsets_3_dict[products_key] = rule_data
+        
+        # Chuyển dict thành list và sắp xếp theo lift
+        itemsets_2_sorted = sorted(itemsets_2_dict.values(), key=lambda x: x['lift'], reverse=True)
+        itemsets_3_sorted = sorted(itemsets_3_dict.values(), key=lambda x: x['lift'], reverse=True)
+        
+        return {
+            'itemsets_2': itemsets_2_sorted[:800],  # Top 800 itemsets 2 sản phẩm
+            'itemsets_3': itemsets_3_sorted[:200]   # Top 200 itemsets 3 sản phẩm
+        }
 
 if __name__ == "__main__":
+    import sys
+    
     analyzer = MarketBasketAnalyzer()
-    results = analyzer.run_apriori(min_support=0.01, min_confidence=0.3)
     
-    print("\n" + "="*80)
-    print("📦 TOP 10 GÓI HÀNG THƯỜNG MUA CÙNG NHAU")
-    print("="*80)
-    
-    for i, rule in enumerate(results['rules'][:10], 1):
-        print(f"\n{i}. {rule['description']}")
-        print(f"   - Độ hỗ trợ: {rule['support']:.2%}")
-        print(f"   - Độ tin cậy: {rule['confidence']:.2%}")
-        print(f"   - Lift: {rule['lift']:.2f}")
+    # Nếu có arguments, chạy get_product_associations
+    if len(sys.argv) >= 4:
+        product_name = sys.argv[1]
+        min_support = float(sys.argv[2])
+        min_confidence = float(sys.argv[3])
+        
+        # Kiểm tra có month/year không
+        month = int(sys.argv[4]) if len(sys.argv) >= 5 else None
+        year = int(sys.argv[5]) if len(sys.argv) >= 6 else None
+        
+        results = analyzer.get_product_associations(product_name, min_support, min_confidence, month, year)
+        print(json.dumps(results, ensure_ascii=False))
+    else:
+        # Chạy full apriori
+        results = analyzer.run_apriori(min_support=0.01, min_confidence=0.3)
+        print(json.dumps(results, ensure_ascii=False))

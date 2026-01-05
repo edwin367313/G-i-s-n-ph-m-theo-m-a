@@ -9,7 +9,7 @@ const getRevenueOverview = async () => {
   const dailyResult = await query(`
     SELECT SUM(total_amount) as total 
     FROM Orders 
-    WHERE status IN ('DELIVERED', 'paid', 'delivery') 
+    WHERE status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed') 
     AND CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
   `);
 
@@ -17,7 +17,7 @@ const getRevenueOverview = async () => {
   const monthlyResult = await query(`
     SELECT SUM(total_amount) as total 
     FROM Orders 
-    WHERE status IN ('DELIVERED', 'paid', 'delivery') 
+    WHERE status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed') 
     AND MONTH(created_at) = MONTH(GETDATE()) 
     AND YEAR(created_at) = YEAR(GETDATE())
   `);
@@ -26,7 +26,7 @@ const getRevenueOverview = async () => {
   const yearlyResult = await query(`
     SELECT SUM(total_amount) as total 
     FROM Orders 
-    WHERE status IN ('DELIVERED', 'paid', 'delivery') 
+    WHERE status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed') 
     AND YEAR(created_at) = YEAR(GETDATE())
   `);
 
@@ -40,7 +40,7 @@ const getRevenueOverview = async () => {
   const productsResult = await query(`
     SELECT COUNT(*) as total 
     FROM Products 
-    WHERE status = 'active'
+    WHERE status = '1'
   `);
 
   // Total Users
@@ -69,7 +69,7 @@ const getRevenueByPeriod = async (startDate, endDate) => {
       SUM(total_amount) as revenue,
       COUNT(*) as orders
     FROM Orders
-    WHERE status IN ('DELIVERED', 'paid', 'delivery')
+    WHERE status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed')
     AND created_at BETWEEN @startDate AND @endDate
   `, { startDate, endDate });
 
@@ -92,7 +92,7 @@ const getMonthlyRevenue = async (year) => {
       COUNT(*) as orders
     FROM Orders
     WHERE YEAR(created_at) = @year
-      AND status IN ('DELIVERED', 'paid', 'delivery')
+      AND status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed')
     GROUP BY MONTH(created_at)
     ORDER BY month
   `, { year });
@@ -113,7 +113,7 @@ const getTopProducts = async (limit = 5) => {
     FROM OrderItems oi
     JOIN Orders o ON oi.order_id = o.id
     JOIN Products p ON oi.product_id = p.id
-    WHERE o.status IN ('DELIVERED', 'paid', 'delivery')
+    WHERE o.status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed')
     GROUP BY p.id, p.name
     ORDER BY sold_quantity DESC
   `, { limit: parseInt(limit) });
@@ -133,7 +133,7 @@ const getRevenueByCategory = async () => {
     JOIN Orders o ON oi.order_id = o.id
     JOIN Products p ON oi.product_id = p.id
     JOIN Categories c ON p.category_id = c.id
-    WHERE o.status IN ('DELIVERED', 'paid', 'delivery')
+    WHERE o.status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed')
     GROUP BY c.name
     ORDER BY revenue DESC
   `);
@@ -156,7 +156,7 @@ const exportRevenueReport = async (startDate, endDate) => {
       o.payment_method,
       o.status
     FROM Orders o
-    WHERE o.status IN ('DELIVERED', 'paid', 'delivery')
+    WHERE o.status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed')
     AND o.created_at BETWEEN @startDate AND @endDate
     ORDER BY o.created_at DESC
   `, { startDate, endDate });

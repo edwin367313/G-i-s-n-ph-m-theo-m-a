@@ -6,7 +6,15 @@ from sklearn.cluster import KMeans
 from datetime import datetime
 import joblib
 import os
+import sys
 from dotenv import load_dotenv
+
+# Fix encoding for Windows console
+try:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')  # type: ignore
+except:
+    pass
 
 load_dotenv()
 
@@ -32,7 +40,7 @@ class CustomerSegmentation:
                 COUNT(DISTINCT id) as frequency,
                 SUM(total_amount) as monetary
             FROM Orders
-            WHERE status IN ('DELIVERED', 'paid', 'delivery')
+            WHERE status IN (N'Đã giao', N'Đá giao', 'DELIVERED')
                 AND user_id IS NOT NULL
             GROUP BY user_id
         )
@@ -53,7 +61,6 @@ class CustomerSegmentation:
         with pyodbc.connect(self.conn_str) as conn:
             df = pd.read_sql(query, conn)
         
-        print(f"📊 Tổng số khách hàng: {len(df)}")
         return df
     
     def segment_customers(self, n_clusters=3):
@@ -63,7 +70,6 @@ class CustomerSegmentation:
         Args:
             n_clusters: Số cụm (mặc định 3: VIP, Thường xuyên, Vãng lai)
         """
-        print(f"🔍 Đang phân cụm khách hàng thành {n_clusters} nhóm...")
         
         # Tính RFM
         df = self.calculate_rfm()
@@ -90,10 +96,8 @@ class CustomerSegmentation:
         # Lưu model
         self._save_model()
         
-        print(f"✅ Đã phân cụm thành công!")
-        
         return df, cluster_analysis
-    
+        
     def _analyze_clusters(self, df):
         """Phân tích đặc điểm của từng cụm"""
         analysis = []
@@ -166,7 +170,6 @@ class CustomerSegmentation:
         
         joblib.dump(self.kmeans, os.path.join(models_dir, 'kmeans_model.pkl'))
         joblib.dump(self.scaler, os.path.join(models_dir, 'scaler.pkl'))
-        print("💾 Đã lưu model vào models/")
     
     def predict_customer_segment(self, recency, frequency, monetary):
         """Dự đoán phân khúc cho khách hàng mới"""
@@ -193,26 +196,23 @@ class CustomerSegmentation:
         self.scaler = joblib.load(os.path.join(models_dir, 'scaler.pkl'))
 
 if __name__ == "__main__":
+    import json
     segmenter = CustomerSegmentation()
     result = segmenter.segment_customers(n_clusters=3)
     
     if result is not None:
         df, analysis = result
-        print("\n" + "="*80)
-        print("👥 PHÂN TÍCH PHÂN KHÚC KHÁCH HÀNG")
-        print("="*80)
         
-        for cluster in analysis:
-            label = df[df['cluster'] == cluster['cluster_id']]['label'].iloc[0]
-            print(f"\n📊 Nhóm {cluster['cluster_id']}: {label}")
-            print(f"   - Số lượng: {cluster['size']} khách hàng")
-            print(f"   - Recency TB: {cluster['avg_recency']:.0f} ngày")
-            print(f"   - Frequency TB: {cluster['avg_frequency']:.1f} đơn")
-            print(f"   - Monetary TB: {cluster['avg_monetary']:,.0f} đ")
-            print(f"   - Tổng doanh thu: {cluster['total_revenue']:,.0f} đ")
-        
-        # Lưu kết quả
+        # Lưu file CSV cho Decision Tree
         output_path = os.path.join(os.path.dirname(__file__), 'data', 'customer_segments.csv')
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         df.to_csv(output_path, index=False, encoding='utf-8-sig')
-        print(f"\n💾 Đã lưu kết quả vào {output_path}")
+        
+        # Xuất JSON cho Node.js
+        print(json.dumps({
+            'segments': analysis,
+            'total_customers': len(df)
+        }, ensure_ascii=False))
+    else:
+        print(json.dumps({'error': 'Khong du du lieu'}, ensure_ascii=False))
+
