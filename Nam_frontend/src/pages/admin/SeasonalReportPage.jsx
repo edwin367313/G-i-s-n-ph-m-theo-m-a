@@ -25,54 +25,55 @@ const SeasonalReportPage = () => {
     loadInitialData();
   }, []);
 
+  // Load dữ liệu ban đầu
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Loading quarterly report...');
-      
-      // Lấy thông tin mùa hiện tại
       const seasonInfoResponse = await getCurrentSeasonInfo();
-      if (seasonInfoResponse.success) {
-        setCurrentSeason(seasonInfoResponse.data.currentSeason);
-        setActiveTab(seasonInfoResponse.data.currentSeason);
+      if (seasonInfoResponse?.success) {
+        const currentSeasonData = seasonInfoResponse.data?.currentSeason || seasonInfoResponse.currentSeason;
+        setCurrentSeason(currentSeasonData);
+        setActiveTab(currentSeasonData);
       }
 
-      // Load quarterly report - chứa data cho tất cả 4 mùa
       const reportResponse = await getQuarterlyReport();
-      console.log('📦 Quarterly Report Response:', reportResponse);
+      const hasSuccessField = reportResponse?.success !== undefined;
+      const summaryData = hasSuccessField 
+        ? (reportResponse.data?.summary || [])
+        : (reportResponse?.summary || []);
+      const details = hasSuccessField
+        ? (reportResponse.data?.details || {})
+        : (reportResponse?.details || {});
       
-      if (reportResponse.success) {
-        const { summary: summaryData, details } = reportResponse.data;
-        console.log('✅ Summary:', summaryData);
-        console.log('✅ Details:', details);
-        
-        setSummary(summaryData || []);
-        
-        // Extract products for each season from details
-        const newSeasonalData = {};
-        Object.keys(details || {}).forEach(season => {
-          newSeasonalData[season] = details[season] || [];
-        });
-        setSeasonalData(newSeasonalData);
-        
-        // Load associations for each season
-        await loadAllAssociations();
-      }
+      setSummary(summaryData);
+      
+      const newSeasonalData = {};
+      Object.keys(details).forEach(season => {
+        newSeasonalData[season] = details[season] || [];
+      });
+      setSeasonalData(newSeasonalData);
+      
+      await loadAllAssociations();
     } catch (error) {
-      console.error('❌ Error loading initial data:', error);
+      console.error('Error loading initial data:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  // Load associations cho 4 mùa
   const loadAllAssociations = async () => {
     const seasons = ['Xuân', 'Hạ', 'Thu', 'Đông'];
     const assocPromises = seasons.map(async (season) => {
       try {
         const response = await getTopAssociations(season, 20);
+        const associations = response?.success 
+          ? (response.data?.associations || [])
+          : (response?.associations || []);
+        
         return {
           season,
-          associations: response.success ? response.data.associations : []
+          associations
         };
       } catch (error) {
         console.error(`Error loading associations for ${season}:`, error);
@@ -336,7 +337,7 @@ const SeasonalReportPage = () => {
         </Paragraph>
         <Button 
           icon={<ReloadOutlined />} 
-          onClick={loadAllSeasonsData}
+          onClick={loadInitialData}
           loading={loading}
         >
           Tải lại dữ liệu
@@ -349,6 +350,139 @@ const SeasonalReportPage = () => {
         onChange={setActiveTab}
         size="large"
       />
+
+      {/* AI Recommendations Section */}
+      <Card 
+        title={
+          <Space>
+            <FireOutlined style={{ color: '#ff4d4f' }} />
+            <span>💡 Gợi ý</span>
+          </Space>
+        }
+        style={{ marginTop: 24 }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col span={8}>
+            <Card 
+              hoverable
+              style={{ 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                height: '100%'
+              }}
+            >
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <div style={{ fontSize: 40 }}>📈</div>
+                <Title level={4} style={{ color: 'white', margin: 0 }}>
+                  Gợi ý Bán hàng
+                </Title>
+                <Paragraph style={{ color: 'rgba(255,255,255,0.9)' }}>
+                  • Tập trung vào top {seasonalData[activeTab]?.length > 0 ? '10' : ''} sản phẩm hot mùa {activeTab}
+                  <br />
+                  • Đẩy mạnh combo sản phẩm theo Association Rules
+                  <br />
+                  • Ưu đãi đặc biệt cho sản phẩm có Confidence cao
+                  <br />
+                  • Cross-sell với sản phẩm có Lift {'>'} 2.0
+                </Paragraph>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={8}>
+            <Card 
+              hoverable
+              style={{ 
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                color: 'white',
+                height: '100%'
+              }}
+            >
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <div style={{ fontSize: 40 }}>📦</div>
+                <Title level={4} style={{ color: 'white', margin: 0 }}>
+                  Gợi ý Nhập hàng
+                </Title>
+                <Paragraph style={{ color: 'rgba(255,255,255,0.9)' }}>
+                  • Chuẩn bị tồn kho cho sản phẩm mùa tiếp theo
+                  <br />
+                  • Tăng lượng nhập cho sản phẩm có CustomerCount cao
+                  <br />
+                  • Đảm bảo sản phẩm B trong association luôn có sẵn
+                  <br />
+                  • Giảm tồn kho sản phẩm ngoài mùa
+                </Paragraph>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={8}>
+            <Card 
+              hoverable
+              style={{ 
+                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                color: 'white',
+                height: '100%'
+              }}
+            >
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <div style={{ fontSize: 40 }}>💡</div>
+                <Title level={4} style={{ color: 'white', margin: 0 }}>
+                  Gợi ý Marketing
+                </Title>
+                <Paragraph style={{ color: 'rgba(255,255,255,0.9)' }}>
+                  • Bundle promotion theo association rules
+                  <br />
+                  • Flash sale sản phẩm có PopularityScore cao
+                  <br />
+                  • Email marketing sản phẩm theo mùa cho khách cũ
+                  <br />
+                  • Voucher combo cho sản phẩm mua chùm
+                </Paragraph>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Detailed Recommendations based on current season */}
+        {currentSeason && seasonalData[activeTab]?.length > 0 && (
+          <Card 
+            style={{ marginTop: 16, background: '#f5f5f5' }}
+            bordered={false}
+          >
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Text strong style={{ fontSize: 16 }}>
+                🎯 Gợi ý cụ thể cho mùa {activeTab}:
+              </Text>
+              <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+                <li>
+                  <Text>
+                    Sản phẩm <Text code>{seasonalData[activeTab]?.[0]?.ProductName}</Text> đang hot nhất với {seasonalData[activeTab]?.[0]?.PurchaseCount} lượt mua
+                  </Text>
+                </li>
+                {associations[activeTab]?.length > 0 && (
+                  <li>
+                    <Text>
+                      Khi khách mua <Text code>{associations[activeTab][0]?.ProductA}</Text>, có {(associations[activeTab][0]?.Confidence * 100).toFixed(1)}% khả năng họ sẽ mua thêm{' '}
+                      <Text code>{associations[activeTab][0]?.ProductB}</Text>
+                    </Text>
+                  </li>
+                )}
+                <li>
+                  <Text>
+                    Tổng {summary.find(s => s.Season === activeTab)?.TotalCustomers || 0} khách hàng đã mua sắm trong mùa này
+                  </Text>
+                </li>
+                <li>
+                  <Text strong type="danger">
+                    💰 Tiềm năng doanh thu: Tập trung vào top 5 sản phẩm và 10 association rules có confidence cao nhất
+                  </Text>
+                </li>
+              </ul>
+            </Space>
+          </Card>
+        )}
+      </Card>
     </div>
   );
 };

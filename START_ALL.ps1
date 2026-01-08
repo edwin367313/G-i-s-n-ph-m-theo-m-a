@@ -8,7 +8,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  🚀 KHỞI ĐỘNG SIÊU THỊ ABC" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-$projectRoot = "c:\tailieuhoc\Kho dữ liệu và khai phá\SIEUTHIABC"
+$projectRoot = $PSScriptRoot
 
 # Kiểm tra thư mục tồn tại
 if (-not (Test-Path $projectRoot)) {

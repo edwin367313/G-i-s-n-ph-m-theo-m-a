@@ -3,52 +3,48 @@ const ExcelJS = require('exceljs');
 
 
 const getRevenueOverview = async () => {
-  // Daily Revenue
+  // Lấy ngày mới nhất
+  const latestDateResult = await query(`
+    SELECT MAX(TransactionDate) as latest_date FROM Transactions
+  `);
+  const latestDate = latestDateResult[0]?.latest_date;
+  
   const dailyResult = await query(`
-    SELECT SUM(total_amount) as total 
-    FROM Orders 
-    WHERE status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed') 
-    AND CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
-  `);
+    SELECT COUNT(*) as total 
+    FROM Transactions 
+    WHERE CAST(TransactionDate AS DATE) = CAST(@latestDate AS DATE)
+  `, { latestDate });
 
-  // Monthly Revenue
   const monthlyResult = await query(`
-    SELECT SUM(total_amount) as total 
-    FROM Orders 
-    WHERE status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed') 
-    AND MONTH(created_at) = MONTH(GETDATE()) 
-    AND YEAR(created_at) = YEAR(GETDATE())
-  `);
+    SELECT COUNT(*) as total 
+    FROM Transactions 
+    WHERE MONTH(TransactionDate) = MONTH(@latestDate) 
+    AND YEAR(TransactionDate) = YEAR(@latestDate)
+  `, { latestDate });
 
-  // Yearly Revenue
   const yearlyResult = await query(`
-    SELECT SUM(total_amount) as total 
-    FROM Orders 
-    WHERE status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed') 
-    AND YEAR(created_at) = YEAR(GETDATE())
-  `);
+    SELECT COUNT(*) as total 
+    FROM Transactions 
+    WHERE YEAR(TransactionDate) = YEAR(@latestDate)
+  `, { latestDate });
 
-  // Total Orders
   const ordersResult = await query(`
     SELECT COUNT(*) as total 
-    FROM Orders 
+    FROM Transactions 
   `);
 
-  // Total Products
   const productsResult = await query(`
-    SELECT COUNT(*) as total 
-    FROM Products 
-    WHERE status = '1'
+    SELECT COUNT(DISTINCT value) as total 
+    FROM Transactions 
+    CROSS APPLY STRING_SPLIT(Items, ', ')
   `);
 
-  // Total Users
   const usersResult = await query(`
-    SELECT COUNT(*) as total 
-    FROM Users 
-    WHERE role = 'customer'
+    SELECT COUNT(DISTINCT MemberNumber) as total 
+    FROM Transactions 
   `);
 
-  return {
+  const result = {
     dailyRevenue: dailyResult[0]?.total || 0,
     monthlyRevenue: monthlyResult[0]?.total || 0,
     yearlyRevenue: yearlyResult[0]?.total || 0,
@@ -56,6 +52,7 @@ const getRevenueOverview = async () => {
     totalProducts: productsResult[0]?.total || 0,
     totalUsers: usersResult[0]?.total || 0
   };
+  return result;
 };
 
 /**
@@ -85,13 +82,12 @@ const getRevenueByPeriod = async (startDate, endDate) => {
 const getMonthlyRevenue = async (year) => {
   const result = await query(`
     SELECT 
-      MONTH(created_at) as month,
-      SUM(total_amount) as revenue,
+      MONTH(TransactionDate) as month,
+      COUNT(*) as revenue,
       COUNT(*) as orders
-    FROM Orders
-    WHERE YEAR(created_at) = @year
-      AND status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed')
-    GROUP BY MONTH(created_at)
+    FROM Transactions
+    WHERE YEAR(TransactionDate) = @year
+    GROUP BY MONTH(TransactionDate)
     ORDER BY month
   `, { year });
   
@@ -101,20 +97,24 @@ const getMonthlyRevenue = async (year) => {
 /**
  * Lấy top sản phẩm bán chạy
  */
-const getTopProducts = async (limit = 5) => {
+const getTopProducts = async (limit = 10) => {
   const result = await query(`
+    WITH ProductSales AS (
+      SELECT 
+        value as product_name,
+        COUNT(*) as sold_quantity
+      FROM Transactions
+      CROSS APPLY STRING_SPLIT(Items, ', ')
+      GROUP BY value
+    )
     SELECT TOP (@limit)
-      p.id,
-      p.name,
-      SUM(oi.quantity) as sold_quantity,
-      SUM(oi.price * oi.quantity) as revenue
-    FROM OrderItems oi
-    JOIN Orders o ON oi.order_id = o.id
-    JOIN Products p ON oi.product_id = p.id
-    WHERE o.status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed')
-    GROUP BY p.id, p.name
+      ROW_NUMBER() OVER (ORDER BY sold_quantity DESC) as id,
+      product_name as name,
+      sold_quantity,
+      sold_quantity as revenue
+    FROM ProductSales
     ORDER BY sold_quantity DESC
-  `, { limit: parseInt(limit) });
+  `, { limit });
   
   return result;
 };
@@ -123,16 +123,20 @@ const getTopProducts = async (limit = 5) => {
  * Lấy doanh thu theo danh mục
  */
 const getRevenueByCategory = async () => {
+  // Dataset không có categories, nên trả về top items grouped
   const result = await query(`
-    SELECT 
-      c.name as name,
-      SUM(oi.price * oi.quantity) as revenue
-    FROM OrderItems oi
-    JOIN Orders o ON oi.order_id = o.id
-    JOIN Products p ON oi.product_id = p.id
-    JOIN Categories c ON p.category_id = c.id
-    WHERE o.status IN (N'Đã giao', 'DELIVERED', 'paid', 'delivery', 'completed')
-    GROUP BY c.name
+    WITH ItemCategories AS (
+      SELECT 
+        LEFT(value, CHARINDEX(' ', value + ' ') - 1) as category,
+        COUNT(*) as revenue
+      FROM Transactions
+      CROSS APPLY STRING_SPLIT(Items, ', ')
+      GROUP BY LEFT(value, CHARINDEX(' ', value + ' ') - 1)
+    )
+    SELECT TOP 10
+      category as name,
+      revenue
+    FROM ItemCategories
     ORDER BY revenue DESC
   `);
   

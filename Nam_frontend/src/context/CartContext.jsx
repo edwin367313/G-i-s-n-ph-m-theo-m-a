@@ -17,22 +17,22 @@ export const CartProvider = ({ children }) => {
     loadCart();
   }, [isAuthenticated]);
 
+  // Load giỏ hàng
   const loadCart = async () => {
     try {
       setIsLoading(true);
       if (isAuthenticated) {
         const response = await cartService.getCart();
-        // Handle response structure { success: true, data: { cart: ... } }
-        const cartData = response.data?.cart || response.cart;
+        const cartData = response.data?.cart || response.cart || response.data;
         setCart(cartData || { items: [], total: 0, itemCount: 0 });
         setAppliedVoucher(response.data?.voucher || response.voucher);
       } else {
-        // Load from local storage
         const localCart = cartService.getLocalCart();
         setCart(localCart);
       }
     } catch (error) {
       console.error('Error loading cart:', error);
+      setCart({ items: [], total: 0, itemCount: 0 });
     } finally {
       setIsLoading(false);
     }
@@ -42,9 +42,10 @@ export const CartProvider = ({ children }) => {
     try {
       if (isAuthenticated) {
         const response = await cartService.addItem(product.id, quantity);
-        const cartData = response.data?.cart || response.cart;
+        const cartData = response.data?.cart || response.cart || response.data;
         setCart(cartData || { items: [], total: 0, itemCount: 0 });
         toast.success(MESSAGES.SUCCESS.ADD_TO_CART);
+        await loadCart();
       } else {
         // Add to local storage
         const localCart = cartService.getLocalCart();

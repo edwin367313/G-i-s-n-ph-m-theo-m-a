@@ -21,29 +21,32 @@ const RevenuePage = () => {
   const [topProducts, setTopProducts] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [year, setYear] = useState(2015);
   const [aprioriModalVisible, setAprioriModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [segmentDateFilter, setSegmentDateFilter] = useState(null);
 
+  // Load tổng quan
   const fetchOverview = async () => {
     try {
       const res = await revenueService.getOverview();
-      if (res.success) {
-        setOverview(res.data);
+      if (res?.success || res?.data) {
+        setOverview(res.data || res);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching overview:', error);
+      message.error('Không thể tải dữ liệu tổng quan');
     }
   };
 
+  // Load data theo tháng
   const fetchMonthlyData = async () => {
     try {
       const res = await revenueService.getMonthlyRevenue(year);
-      if (res.success) {
-        // Transform data for chart
+      if (res?.success || res?.data) {
+        const results = res.data?.results || res.results || [];
         const chartData = Array.from({ length: 12 }, (_, i) => {
-          const monthData = res.data.results.find(item => item.month === i + 1);
+          const monthData = results.find(item => item.month === i + 1);
           return {
             month: `T${i + 1}`,
             revenue: monthData ? monthData.revenue : 0,
@@ -53,29 +56,34 @@ const RevenuePage = () => {
         setMonthlyData(chartData);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching monthly data:', error);
+      message.error('Không thể tải dữ liệu theo tháng');
     }
   };
 
   const fetchTopProducts = async () => {
     try {
       const res = await revenueService.getTopProducts();
-      if (res.success) {
-        setTopProducts(res.data.products);
+      if (res?.success || res?.data) {
+        const products = res.data?.products || res.products || [];
+        setTopProducts(products);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching top products:', error);
+      message.error('Không thể tải top sản phẩm');
     }
   };
 
   const fetchCategoryData = async () => {
     try {
       const res = await revenueService.getRevenueByCategory();
-      if (res.success) {
-        setCategoryData(res.data.categories);
+      if (res?.success || res?.data) {
+        const categories = res.data?.categories || res.categories || [];
+        setCategoryData(categories);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching category data:', error);
+      message.error('Không thể tải dữ liệu danh mục');
     }
   };
 
@@ -180,10 +188,9 @@ const RevenuePage = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col span={16}>
           <Card title={`Biểu đồ doanh thu năm ${year}`} extra={
-            <Select defaultValue={year} onChange={setYear} style={{ width: 100 }}>
-              <Select.Option value={2024}>2024</Select.Option>
-              <Select.Option value={2025}>2025</Select.Option>
-              <Select.Option value={2026}>2026</Select.Option>
+            <Select value={year} onChange={setYear} style={{ width: 100 }}>
+              <Select.Option value={2014}>2014</Select.Option>
+              <Select.Option value={2015}>2015</Select.Option>
             </Select>
           }>
             <ResponsiveContainer width="100%" height={300}>
