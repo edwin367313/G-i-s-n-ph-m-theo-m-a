@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { useProducts } from '../../hooks/useProduct';
 import ProductList from '../../components/product/ProductList';
 import FilterPanel from '../../components/common/FilterPanel';
+import SeasonalBanner from '../../components/common/SeasonalBanner';
 import './HomePage.css';
 
 const { Title, Paragraph, Text } = Typography;
@@ -192,6 +193,11 @@ const HomePage = () => {
             </Col>
           ))}
         </Row>
+      </section>
+
+      {/* Seasonal Products Section - NEW */}
+      <section className="seasonal-section">
+        <SeasonalBanner limit={8} showTitle={true} />
       </section>
 
       {/* Categories Section */}

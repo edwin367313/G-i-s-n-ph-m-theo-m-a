@@ -22,14 +22,8 @@ const getProducts = async (filters = {}) => {
   let whereConditions = [];
   const params = {};
   
-  // Handle status filter - database uses '1' for active, '0' for inactive
-  if (status === 'active') {
-    whereConditions.push('p.status = @status');
-    params.status = '1';
-  } else if (status === 'inactive') {
-    whereConditions.push('p.status = @status');
-    params.status = '0';
-  } else if (status) {
+  // Handle status filter
+  if (status) {
     whereConditions.push('p.status = @status');
     params.status = status;
   }

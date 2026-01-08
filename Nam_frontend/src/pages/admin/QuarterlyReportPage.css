@@ -1,0 +1,39 @@
+.quarterly-report-page {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.current-season-row {
+  background-color: #e6f7ff;
+}
+
+.current-season-row:hover {
+  background-color: #bae7ff !important;
+}
+
+.ant-statistic-content {
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .quarterly-report-page {
+    padding: 16px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ant-statistic-content {
+    font-size: 24px !important;
+  }
+}

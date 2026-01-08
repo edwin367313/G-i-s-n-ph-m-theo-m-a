@@ -9,3 +9,4 @@ export { default as categoryService } from './categoryService';
 export { default as themeService } from './themeService';
 export { default as revenueService } from './revenueService';
 export { default as mlService } from './mlService';
+export { default as recommendationService } from './recommendationService';

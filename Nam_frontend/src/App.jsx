@@ -32,6 +32,9 @@ const AdminOrders = lazy(() => import('./pages/admin/OrdersPage'));
 const AdminRevenue = lazy(() => import('./pages/admin/RevenuePage'));
 const AdminThemes = lazy(() => import('./pages/admin/ThemesPage'));
 const AdminNotifications = lazy(() => import('./pages/admin/NotificationsPage'));
+const ProductPredictionPage = lazy(() => import('./pages/admin/ProductPredictionPage'));
+const SeasonalReportPage = lazy(() => import('./pages/admin/SeasonalReportPage'));
+const QuarterlyReportPage = lazy(() => import('./pages/admin/QuarterlyReportPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Create React Query client
@@ -216,6 +219,30 @@ function AppContent() {
               element={
                 <ProtectedRoute requireAdmin>
                   <AdminNotifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/ml/prediction"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <ProductPredictionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/ml/seasonal-report"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <SeasonalReportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/ml/quarterly-report"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <QuarterlyReportPage />
                 </ProtectedRoute>
               }
             />

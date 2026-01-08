@@ -30,19 +30,30 @@ const register = async (userData) => {
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // Lấy MemberNumber tiếp theo
+  const maxMemberResult = await query('SELECT MAX(MemberNumber) as maxMember FROM Users');
+  const nextMemberNumber = (maxMemberResult[0].maxMember || 5000) + 1;
+
   // Tạo user mới
-  const result = await query(`
-    INSERT INTO Users (username, email, password, full_name, phone, address, role, is_active, created_at)
-    OUTPUT INSERTED.*
-    VALUES (@username, @email, @password, @fullName, @phone, @address, 'customer', 1, GETDATE())
+  await query(`
+    INSERT INTO Users (username, email, password, full_name, phone, address, role, is_active, MemberNumber, created_at)
+    VALUES (@username, @email, @password, @fullName, @phone, @address, 'customer', 1, @memberNumber, GETDATE())
   `, {
     username,
     email,
     password: hashedPassword,
     fullName,
     phone,
-    address
+    address,
+    memberNumber: nextMemberNumber
   });
+
+  // Lấy user vừa tạo
+  const result = await query(`
+    SELECT id, MemberNumber, username, email, full_name, phone, address, role, is_active, created_at
+    FROM Users
+    WHERE username = @username
+  `, { username });
 
   const user = result[0];
 
@@ -115,7 +126,7 @@ const login = async (usernameOrEmail, password) => {
  */
 const getCurrentUser = async (userId) => {
   const result = await query(
-    'SELECT id, username, email, full_name, phone, address, role, is_active, avatar, created_at FROM Users WHERE id = @userId',
+    'SELECT id, MemberNumber, username, email, full_name, phone, address, role, is_active, avatar, created_at FROM Users WHERE id = @userId',
     { userId }
   );
 
@@ -132,14 +143,13 @@ const getCurrentUser = async (userId) => {
 const updateProfile = async (userId, updateData) => {
   const { fullName, phone, address, avatar } = updateData;
 
-  const result = await query(`
+  await query(`
     UPDATE Users
     SET full_name = COALESCE(@fullName, full_name),
         phone = COALESCE(@phone, phone),
         address = COALESCE(@address, address),
         avatar = COALESCE(@avatar, avatar),
         updated_at = GETDATE()
-    OUTPUT INSERTED.id, INSERTED.username, INSERTED.email, INSERTED.full_name, INSERTED.phone, INSERTED.address, INSERTED.role, INSERTED.is_active, INSERTED.avatar
     WHERE id = @userId
   `, {
     userId,
@@ -148,6 +158,13 @@ const updateProfile = async (userId, updateData) => {
     address,
     avatar
   });
+
+  // Lấy user sau khi update
+  const result = await query(`
+    SELECT id, MemberNumber, username, email, full_name, phone, address, role, is_active, avatar
+    FROM Users
+    WHERE id = @userId
+  `, { userId });
 
   if (!result || result.length === 0) {
     throw new Error('User không tồn tại');

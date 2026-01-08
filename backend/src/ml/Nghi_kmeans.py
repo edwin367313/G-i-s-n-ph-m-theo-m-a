@@ -9,7 +9,6 @@ import os
 import sys
 from dotenv import load_dotenv
 
-# Fix encoding for Windows console
 try:
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')  # type: ignore
@@ -64,13 +63,7 @@ class CustomerSegmentation:
         return df
     
     def segment_customers(self, n_clusters=3):
-        """
-        Phân cụm khách hàng bằng K-Means
-        
-        Args:
-            n_clusters: Số cụm (mặc định 3: VIP, Thường xuyên, Vãng lai)
-        """
-        
+
         # Tính RFM
         df = self.calculate_rfm()
         
@@ -118,29 +111,23 @@ class CustomerSegmentation:
     
     def _auto_label_clusters(self, df, cluster_analysis):
         """
-        Tự động gán nhãn cho các cụm dựa trên đặc điểm RFM
-        
-        Logic:
-        - VIP: Frequency cao, Monetary cao, Recency thấp
-        - Thường xuyên: Frequency trung bình, Monetary trung bình
-        - Vãng lai: Frequency thấp hoặc Recency cao
+        Gán nhãn cho các cụm dựa trên đặc điểm RFM
         """
         # Tính điểm cho mỗi cụm
         cluster_scores = []
         
         for analysis in cluster_analysis:
-            # Điểm càng cao = khách hàng càng tốt
             score = (
                 analysis['avg_frequency'] * 0.4 +  # Tần suất mua hàng quan trọng
                 (analysis['avg_monetary'] / 1000000) * 0.4 +  # Tổng chi tiêu
-                (1 / (analysis['avg_recency'] + 1)) * 100 * 0.2  # Gần đây (đảo ngược)
+                (1 / (analysis['avg_recency'] + 1)) * 100 * 0.2  # Gần đây 
             )
             cluster_scores.append({
                 'cluster_id': analysis['cluster_id'],
                 'score': score
             })
         
-        # Sắp xếp theo điểm
+        # Sắp xếp điểm
         cluster_scores = sorted(cluster_scores, key=lambda x: x['score'], reverse=True)
         
         # Gán nhãn
@@ -154,11 +141,11 @@ class CustomerSegmentation:
             labels[cluster_scores[1]['cluster_id']] = 'Thường xuyên'
             labels[cluster_scores[2]['cluster_id']] = 'Vãng lai'
             
-            # Nếu có thêm cụm, gọi là "Cần chăm sóc"
+            # "Cần chăm sóc khách hàng"
             for i in range(3, len(cluster_scores)):
-                labels[cluster_scores[i]['cluster_id']] = 'Cần chăm sóc'
+                labels[cluster_scores[i]['cluster_id']] = 'Cần chăm sóc khách hàng'
         
-        # Áp dụng nhãn vào dataframe
+        # Gán nhãn vào dataframe
         df['label'] = df['cluster'].map(labels)
         
         return df
@@ -203,7 +190,6 @@ if __name__ == "__main__":
     if result is not None:
         df, analysis = result
         
-        # Lưu file CSV cho Decision Tree
         output_path = os.path.join(os.path.dirname(__file__), 'data', 'customer_segments.csv')
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         df.to_csv(output_path, index=False, encoding='utf-8-sig')

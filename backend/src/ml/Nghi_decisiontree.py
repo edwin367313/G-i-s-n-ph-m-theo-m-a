@@ -9,7 +9,6 @@ import os
 import sys
 from dotenv import load_dotenv
 
-# Fix encoding for Windows console
 try:
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')  # type: ignore
@@ -31,20 +30,17 @@ class CustomerClassifier:
         self.label_mapping = None
     
     def load_segmented_data(self):
-        """Load dữ liệu đã được phân khúc từ bước 2"""
+        """Load dữ liệu đã được phân khúc"""
         data_path = os.path.join(os.path.dirname(__file__), 'data', 'customer_segments.csv')
         
         if not os.path.exists(data_path):
-            raise FileNotFoundError("Chưa có dữ liệu phân khúc. Hãy chạy step2_kmeans.py trước!")
+            raise FileNotFoundError("Chưa có dữ liệu phân khúc.")
         
         df = pd.read_csv(data_path)
         return df
     
     def prepare_training_data(self):
-        """
-        Chuẩn bị dữ liệu huấn luyện
-        Kết hợp thông tin khách hàng với nhãn phân khúc
-        """
+        """Chuẩn bị dữ liệu huấn luyện cho Decision Tree"""
         # Load dữ liệu đã phân khúc
         df = self.load_segmented_data()
         
@@ -85,7 +81,6 @@ class CustomerClassifier:
         Huấn luyện Decision Tree với nhãn từ K-Means
         
         Args:
-            max_depth: Độ sâu tối đa của cây (để dễ hiểu)
         """
         print(f"🌳 Đang huấn luyện Decision Tree...")
         
@@ -213,7 +208,6 @@ class CustomerClassifier:
         # Lấy nhãn
         label = metadata['label_mapping'][prediction]  # type: ignore
         
-        # Tạo kết quả chi tiết
         result = {
             'label': label,
             'confidence': float(max(probabilities)),
@@ -242,11 +236,10 @@ if __name__ == "__main__":
         print(results['rules'])
         
         print("\n" + "="*80)
-        print("📊 ĐỘ QUAN TRỌNG CỦA FEATURES")
         print("="*80)
         for item in results['feature_importance']:
             print(f"  {item['feature']:20s}: {item['importance']:.3f}")
         
     except FileNotFoundError as e:
-        print(f"❌ Lỗi: {e}")
-        print("💡 Hãy chạy step2_kmeans.py trước để tạo dữ liệu phân khúc!")
+        print(f" Lỗi: {e}")
+        print("💡 Hãy dữ liệu phân khúc trước!")

@@ -7,7 +7,6 @@ import os
 import sys
 from dotenv import load_dotenv
 
-# Fix encoding for Windows console
 try:
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')  # type: ignore
@@ -38,7 +37,7 @@ class MarketBasketAnalyzer:
         WHERE o.status IN (N'Đã giao', N'Đá giao', 'DELIVERED')
         """
         
-        # Thêm filter theo tháng nếu có
+        # Thêm filter theo tháng 
         if month and year:
             query += f" AND MONTH(o.created_at) = {month} AND YEAR(o.created_at) = {year}"
             print(f"[Apriori] Filtering by month={month}, year={year}", file=sys.stderr)
@@ -58,14 +57,7 @@ class MarketBasketAnalyzer:
         return transactions
     
     def run_apriori(self, min_support=0.01, min_confidence=0.3, min_lift=1.0):
-        """
-        Chạy thuật toán Apriori
         
-        Args:
-            min_support: Độ hỗ trợ tối thiểu (0.01 = 1% đơn hàng)
-            min_confidence: Độ tin cậy tối thiểu (0.3 = 30%)
-            min_lift: Lift tối thiểu (1.0 = không ảnh hưởng)
-        """
         # Lấy dữ liệu
         transactions = self.get_transactions()
         
@@ -106,7 +98,7 @@ class MarketBasketAnalyzer:
             }
     
     def _format_results(self, rules):
-        """Format kết quả để trả về API"""
+        """trả về API"""
         formatted_rules = []
         
         for _, rule in rules.iterrows():  # type: ignore
@@ -129,7 +121,7 @@ class MarketBasketAnalyzer:
         }
     
     def get_top_combos(self, limit=10):
-        """Lấy top N gói hàng được mua cùng nhau nhiều nhất"""
+        
         results = self.run_apriori(min_support=0.01, min_confidence=0.3, min_lift=1.2)
         
         if results['rules']:
@@ -137,17 +129,12 @@ class MarketBasketAnalyzer:
         return []
     
     def get_product_associations(self, product_name, min_support=0.01, min_confidence=0.3, month=None, year=None):
-        """
-        Tìm các sản phẩm thường được mua cùng với product_name
-        Trả về itemsets_2 (2 sản phẩm) và itemsets_3 (3 sản phẩm)
-        """
         # Chạy Apriori để lấy tất cả rules
         transactions = self.get_transactions(month, year)
         
         if not transactions:
             return {'itemsets_2': [], 'itemsets_3': []}
         
-        # Chuyển đổi sang one-hot encoding
         te = TransactionEncoder()
         te_ary = te.fit(transactions).transform(transactions)
         # Convert sparse matrix to dense array for pandas
@@ -168,7 +155,6 @@ class MarketBasketAnalyzer:
             min_threshold=min_confidence
         )
         
-        # Dùng dict để deduplicate (key = frozenset của products, value = rule tốt nhất)
         itemsets_2_dict = {}
         itemsets_3_dict = {}
         
@@ -180,7 +166,6 @@ class MarketBasketAnalyzer:
             
             # Chỉ lấy rules có chứa product_name
             if product_name in all_products:
-                # Tạo key unique bằng frozenset (không phân biệt thứ tự)
                 products_key = frozenset(all_products)
                 
                 rule_data = {
@@ -191,7 +176,6 @@ class MarketBasketAnalyzer:
                 }
                 
                 if len(all_products) == 2:
-                    # Chỉ giữ rule có lift cao nhất cho mỗi nhóm sản phẩm
                     if products_key not in itemsets_2_dict or rule_data['lift'] > itemsets_2_dict[products_key]['lift']:
                         itemsets_2_dict[products_key] = rule_data
                         
@@ -199,13 +183,12 @@ class MarketBasketAnalyzer:
                     if products_key not in itemsets_3_dict or rule_data['lift'] > itemsets_3_dict[products_key]['lift']:
                         itemsets_3_dict[products_key] = rule_data
         
-        # Chuyển dict thành list và sắp xếp theo lift
         itemsets_2_sorted = sorted(itemsets_2_dict.values(), key=lambda x: x['lift'], reverse=True)
         itemsets_3_sorted = sorted(itemsets_3_dict.values(), key=lambda x: x['lift'], reverse=True)
         
         return {
-            'itemsets_2': itemsets_2_sorted[:800],  # Top 800 itemsets 2 sản phẩm
-            'itemsets_3': itemsets_3_sorted[:200]   # Top 200 itemsets 3 sản phẩm
+            'itemsets_2': itemsets_2_sorted[:800],  
+            'itemsets_3': itemsets_3_sorted[:200]   
         }
 
 if __name__ == "__main__":
@@ -213,13 +196,11 @@ if __name__ == "__main__":
     
     analyzer = MarketBasketAnalyzer()
     
-    # Nếu có arguments, chạy get_product_associations
     if len(sys.argv) >= 4:
         product_name = sys.argv[1]
         min_support = float(sys.argv[2])
         min_confidence = float(sys.argv[3])
         
-        # Kiểm tra có month/year không
         month = int(sys.argv[4]) if len(sys.argv) >= 5 else None
         year = int(sys.argv[5]) if len(sys.argv) >= 6 else None
         

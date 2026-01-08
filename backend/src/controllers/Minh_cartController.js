@@ -1,10 +1,29 @@
 const cartService = require('../services/cartService');
+const recommendationService = require('../services/recommendationService');
 const { successResponse } = require('../utils/helpers');
 const { asyncHandler } = require('../middlewares/errorMiddleware');
 
 const getCart = asyncHandler(async (req, res) => {
   const cart = await cartService.getCart(req.userId);
-  return successResponse(res, { cart }, 'Lấy giỏ hàng thành công');
+  
+  // Thêm recommendations cho giỏ hàng
+  let recommendations = [];
+  if (cart && cart.items && cart.items.length > 0) {
+    const currentSeason = recommendationService.getCurrentSeason();
+    recommendations = await recommendationService.getCartRecommendations(
+      cart.items,
+      currentSeason,
+      5
+    );
+  }
+  
+  return successResponse(res, { 
+    cart, 
+    recommendations: {
+      season: recommendationService.getCurrentSeason(),
+      items: recommendations
+    }
+  }, 'Lấy giỏ hàng thành công');
 });
 
 const addToCart = asyncHandler(async (req, res) => {

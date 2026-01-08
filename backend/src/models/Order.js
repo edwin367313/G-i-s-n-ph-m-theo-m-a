@@ -129,10 +129,24 @@ class Order {
 
         if (isNaN(safe_total)) throw new Error(`Total Amount is invalid: ${final_total} (Total: ${total}, Discount: ${discount_amount})`);
 
-        // Create order
+        // Lấy MemberNumber từ Users table
+        request = new sql.Request(transaction);
+        const userResult = await request
+          .input('userId', sql.Int, userId)
+          .query('SELECT MemberNumber FROM Users WHERE id = @userId');
+        
+        if (!userResult.recordset[0] || !userResult.recordset[0].MemberNumber) {
+          throw new Error('User không có MemberNumber');
+        }
+        
+        const memberNumber = userResult.recordset[0].MemberNumber;
+        
+        // Create order (với MemberNumber và InvoiceDate)
         request = new sql.Request(transaction);
         const orderResult = await request
           .input('userId', sql.Int, userId)
+          .input('memberNumber', sql.Int, memberNumber)
+          .input('invoiceDate', sql.Date, new Date())
           .input('fullName', sql.NVarChar(100), shippingName)
           .input('phone', sql.NVarChar(20), shippingPhone)
           .input('address', sql.NVarChar(255), shippingAddress)
@@ -141,9 +155,9 @@ class Order {
           .input('paymentMethod', sql.NVarChar(50), paymentMethod || 'COD')
           .input('note', sql.NVarChar(500), note || '')
           .query(`
-            INSERT INTO Orders (user_id, full_name, phone, address, total_amount, status, payment_method, note)
+            INSERT INTO Orders (user_id, MemberNumber, InvoiceDate, full_name, phone, address, total_amount, status, payment_method, note)
             OUTPUT INSERTED.*
-            VALUES (@userId, @fullName, @phone, @address, @totalAmount, @status, @paymentMethod, @note)
+            VALUES (@userId, @memberNumber, @invoiceDate, @fullName, @phone, @address, @totalAmount, @status, @paymentMethod, @note)
           `);
         
         const orderId = orderResult.recordset[0].id;

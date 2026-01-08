@@ -1,9 +1,7 @@
 const { query } = require('../config/database');
 const ExcelJS = require('exceljs');
 
-/**
- * Lấy tổng quan doanh thu
- */
+
 const getRevenueOverview = async () => {
   // Daily Revenue
   const dailyResult = await query(`
@@ -141,9 +139,7 @@ const getRevenueByCategory = async () => {
   return result;
 };
 
-/**
- * Export báo cáo doanh thu ra file Excel
- */
+/** Export báo cáo doanh thu ra file Excel*/
 const exportRevenueReport = async (startDate, endDate) => {
   // Lấy dữ liệu từ database
   const orders = await query(`

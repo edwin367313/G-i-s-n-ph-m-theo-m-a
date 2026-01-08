@@ -8,7 +8,9 @@ import {
   SkinOutlined,
   AppstoreOutlined,
   PlusOutlined,
-  BellOutlined
+  BellOutlined,
+  FundOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import revenueService from '../../services/revenueService';
@@ -74,6 +76,24 @@ const Dashboard = () => {
       icon: <DollarOutlined style={{ fontSize: '24px', color: '#faad14' }} />,
       desc: 'Xem thống kê chi tiết',
       link: '/admin/revenue'
+    },
+    {
+      title: 'Dự đoán Sản phẩm',
+      icon: <RobotOutlined style={{ fontSize: '24px', color: '#13c2c2' }} />,
+      desc: 'ML - Gợi ý sản phẩm liên quan',
+      link: '/admin/ml/prediction'
+    },
+    {
+      title: 'Báo cáo Theo mùa',
+      icon: <FundOutlined style={{ fontSize: '24px', color: '#eb2f96' }} />,
+      desc: 'Phân tích sản phẩm theo 4 mùa',
+      link: '/admin/ml/seasonal-report'
+    },
+    {
+      title: 'Báo cáo Quý',
+      icon: <FundOutlined style={{ fontSize: '24px', color: '#fa8c16' }} />,
+      desc: 'So sánh hiệu quả theo quý',
+      link: '/admin/ml/quarterly-report'
     }
   ];
 

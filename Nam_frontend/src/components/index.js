@@ -3,6 +3,7 @@ export { default as Header } from './common/Header';
 export { default as Footer } from './common/Footer';
 export { default as Loading } from './common/Loading';
 export { default as FilterPanel } from './common/FilterPanel';
+export { default as SeasonalBanner } from './common/SeasonalBanner';
 
 export { default as ProductCard } from './product/ProductCard';
 export { default as ProductList } from './product/ProductList';
